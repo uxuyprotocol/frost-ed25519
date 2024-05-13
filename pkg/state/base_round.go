@@ -33,3 +33,15 @@ func (r BaseRound) SelfID() party.ID {
 func (r BaseRound) PartyIDs() party.IDSlice {
 	return r.partyIDs
 }
+
+//type baseRoundJSON struct {
+//	SelfID    party.ID 		`json:"selfID"`
+//	PartyIDs party.IDSlice      `json:"partIDs"`
+//}
+//
+//func (r BaseRound) MarshalJSON() ([]byte, error) {
+//	return json.Marshal(baseRoundJSON{
+//		r.selfID,
+//		r.partyIDs,
+//	})
+//}

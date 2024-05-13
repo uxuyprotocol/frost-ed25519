@@ -8,11 +8,11 @@ import (
 	"github.com/taurusgroup/frost-ed25519/pkg/state"
 )
 
-func (round *round0) ProcessMessage(*messages.Message) *state.Error {
+func (round *Round0) ProcessMessage(*messages.Message) *state.Error {
 	return nil
 }
 
-func (round *round0) GenerateMessages() ([]*messages.Message, *state.Error) {
+func (round *Round0) GenerateMessages() ([]*messages.Message, *state.Error) {
 	// Sample a_i,0 which is the constant factor of the polynomial
 	scalar.SetScalarRandom(&round.Secret)
 
@@ -39,6 +39,6 @@ func (round *round0) GenerateMessages() ([]*messages.Message, *state.Error) {
 	return []*messages.Message{msg}, nil
 }
 
-func (round *round0) NextRound() state.Round {
-	return &round1{round}
+func (round *Round0) NextRound() state.Round {
+	return &Round1{round}
 }

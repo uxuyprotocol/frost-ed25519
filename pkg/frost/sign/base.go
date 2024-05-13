@@ -1,9 +1,9 @@
 package sign
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
-
 	"github.com/taurusgroup/frost-ed25519/pkg/eddsa"
 	"github.com/taurusgroup/frost-ed25519/pkg/frost/party"
 	"github.com/taurusgroup/frost-ed25519/pkg/messages"
@@ -42,6 +42,16 @@ type (
 		*round1
 	}
 )
+
+func (round *round0) MarshalRound() ([]byte, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (round *round0) UnmarshalRound(data []byte) (state.Round, error) {
+	//TODO implement me
+	panic("implement me")
+}
 
 func NewRound(partyIDs party.IDSlice, secret *eddsa.SecretShare, shares *eddsa.Public, message []byte) (state.Round, *Output, error) {
 	if !partyIDs.Contains(secret.ID) {
@@ -114,4 +124,65 @@ func (round *round0) AcceptedMessageTypes() []messages.MessageType {
 		messages.MessageTypeSign1,
 		messages.MessageTypeSign2,
 	}
+}
+
+//type round0JSON struct {
+//	Base *state.BaseRound `json:"base"`
+//
+//	Threshold party.Size `json:"threshold"`
+//
+//	Secret ristretto.Scalar `json:"secret,omitempty"`
+//
+//	Polynomial *polynomial.Polynomial `json:"polynomial,omitempty"`
+//
+//	CommitmentsSum *polynomial.Exponent `json:"commitments_sum,omitempty"`
+//
+//	Commitments map[party.ID]*polynomial.Exponent `json:"commitments,omitempty"`
+//
+//	Output *Output `json:"output,omitempty"`
+//}
+
+func (round *round0) MarshalJSON() ([]byte, error) {
+
+	return json.Marshal(round)
+
+	//rawJson := round0JSON{
+	//	round.BaseRound,
+	//	round.Threshold,
+	//	round.Secret,
+	//	round.Polynomial,
+	//	round.CommitmentsSum,
+	//	round.Commitments,
+	//	round.Output,
+	//}
+	//result, err := json.Marshal(&rawJson)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//return result, nil
+}
+
+func (round *round0) UnmarshalJSON(data []byte) error {
+
+	return json.Unmarshal(data, round)
+
+	//var rawJson round0JSON
+	//err := json.Unmarshal(data, &rawJson)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	////var baseRound *state.BaseRound
+	////err := json.Unmarshal(rawJson.Base, &baseRound)
+	//
+	//*round = round0{
+	//	BaseRound:      rawJson.Base,
+	//	Threshold:      rawJson.Threshold,
+	//	Secret:         rawJson.Secret,
+	//	Polynomial:     rawJson.Polynomial,
+	//	CommitmentsSum: rawJson.CommitmentsSum,
+	//	Commitments:    rawJson.Commitments,
+	//	Output:         rawJson.Output,
+	//}
+	//return nil
 }

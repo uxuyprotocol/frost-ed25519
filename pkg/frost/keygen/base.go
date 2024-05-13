@@ -1,6 +1,7 @@
 package keygen
 
 import (
+	"encoding/json"
 	"errors"
 
 	"github.com/taurusgroup/frost-ed25519/pkg/frost/party"
@@ -11,7 +12,7 @@ import (
 )
 
 type (
-	round0 struct {
+	Round0 struct {
 		*state.BaseRound
 
 		// Threshold is the degree of the polynomial used for Shamir.
@@ -34,11 +35,11 @@ type (
 
 		Output *Output
 	}
-	round1 struct {
-		*round0
+	Round1 struct {
+		*Round0
 	}
-	round2 struct {
-		*round1
+	Round2 struct {
+		*Round1
 	}
 )
 
@@ -57,7 +58,7 @@ func NewRound(selfID party.ID, partyIDs party.IDSlice, threshold party.Size) (st
 		return nil, nil, err
 	}
 
-	r := round0{
+	r := Round0{
 		BaseRound:   baseRound,
 		Threshold:   threshold,
 		Commitments: make(map[party.ID]*polynomial.Exponent, N),
@@ -67,7 +68,7 @@ func NewRound(selfID party.ID, partyIDs party.IDSlice, threshold party.Size) (st
 	return &r, r.Output, nil
 }
 
-func (round *round0) Reset() {
+func (round *Round0) Reset() {
 	round.Secret.Set(ristretto.NewScalar())
 	round.Polynomial.Reset()
 	round.CommitmentsSum.Reset()
@@ -81,6 +82,124 @@ func (round *round0) Reset() {
 // Messages
 // ---
 
-func (round *round0) AcceptedMessageTypes() []messages.MessageType {
+func (round *Round0) AcceptedMessageTypes() []messages.MessageType {
 	return []messages.MessageType{messages.MessageTypeNone, messages.MessageTypeKeyGen1, messages.MessageTypeKeyGen2}
 }
+
+type Round0JSON struct {
+	Base *state.BaseRound `json:"base"`
+
+	Threshold party.Size `json:"threshold"`
+
+	Secret ristretto.Scalar `json:"secret,omitempty"`
+
+	Polynomial *polynomial.Polynomial `json:"polynomial,omitempty"`
+
+	CommitmentsSum *polynomial.Exponent `json:"commitments_sum,omitempty"`
+
+	Commitments map[party.ID]*polynomial.Exponent `json:"commitments,omitempty"`
+
+	Output *Output `json:"output,omitempty"`
+}
+
+func (round *Round0) MarshalJSON() ([]byte, error) {
+
+	rawJson := Round0JSON{
+		round.BaseRound,
+		round.Threshold,
+		round.Secret,
+		round.Polynomial,
+		round.CommitmentsSum,
+		round.Commitments,
+		round.Output,
+	}
+	result, err := json.Marshal(&rawJson)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (round *Round0) UnmarshalJSON(data []byte) error {
+	var rawJson Round0JSON
+	err := json.Unmarshal(data, &rawJson)
+	if err != nil {
+		return err
+	}
+
+	//var baseRound *state.BaseRound
+	//err := json.Unmarshal(rawJson.Base, &baseRound)
+
+	*round = Round0{
+		BaseRound:      rawJson.Base,
+		Threshold:      rawJson.Threshold,
+		Secret:         rawJson.Secret,
+		Polynomial:     rawJson.Polynomial,
+		CommitmentsSum: rawJson.CommitmentsSum,
+		Commitments:    rawJson.Commitments,
+		Output:         rawJson.Output,
+	}
+	return nil
+}
+
+func (round *Round0) MarshalRound() ([]byte, error) {
+	return json.Marshal(&round)
+}
+
+func (round *Round0) UnmarshalRound(data []byte) (state.Round, error) {
+	var result state.Round
+	err := json.Unmarshal(data, &result)
+	return result, err
+
+}
+
+func (round *Round1) MarshalRound() ([]byte, error) {
+	return json.Marshal(&round)
+}
+
+func (round *Round1) UnmarshalRound(data []byte) (state.Round, error) {
+	var result state.Round
+	err := json.Unmarshal(data, &result)
+	return result, err
+
+}
+
+func (round *Round2) MarshalRound() ([]byte, error) {
+	return json.Marshal(&round)
+}
+
+func (round *Round2) UnmarshalRound(data []byte) (state.Round, error) {
+	var result state.Round
+	err := json.Unmarshal(data, &result)
+	return result, err
+
+}
+
+//
+//func (round *Round1) MarshalJSON() ([]byte, error) {
+//	return json.Marshal(round.Round0)
+//}
+//
+//func (round *Round1) UnmarshalJSON(data []byte) error {
+//	var Round0 Round0
+//	err := json.Unmarshal(data, &Round0)
+//	if err != nil {
+//		return err
+//	}
+//	round.Round0 = &Round0
+//	return nil
+//}
+//
+//func (round *Round2) MarshalJSON() ([]byte, error) {
+//	return json.Marshal(round.Round1)
+//}
+//
+//func (round *Round2) UnmarshalJSON(data []byte) error {
+//	var Round1 Round1
+//	err := json.Unmarshal(data, &Round1)
+//	if err != nil {
+//		return err
+//	}
+//	round.Round1 = &Round1
+//	return nil
+//}

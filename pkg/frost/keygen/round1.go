@@ -7,7 +7,7 @@ import (
 	"github.com/taurusgroup/frost-ed25519/pkg/state"
 )
 
-func (round *round1) ProcessMessage(msg *messages.Message) *state.Error {
+func (round *Round1) ProcessMessage(msg *messages.Message) *state.Error {
 	// TODO we can use custom contexts to prevent replay attacks
 	ctx := make([]byte, 32)
 	from := msg.From
@@ -24,7 +24,7 @@ func (round *round1) ProcessMessage(msg *messages.Message) *state.Error {
 	return nil
 }
 
-func (round *round1) GenerateMessages() ([]*messages.Message, *state.Error) {
+func (round *Round1) GenerateMessages() ([]*messages.Message, *state.Error) {
 	msgsOut := make([]*messages.Message, 0, len(round.PartyIDs())-1)
 	for _, id := range round.PartyIDs() {
 		if id == round.SelfID() {
@@ -40,10 +40,10 @@ func (round *round1) GenerateMessages() ([]*messages.Message, *state.Error) {
 	return msgsOut, nil
 }
 
-func (round *round1) NextRound() state.Round {
-	return &round2{round}
+func (round *Round1) NextRound() state.Round {
+	return &Round2{round}
 }
 
-func (round *round1) MessageType() messages.MessageType {
+func (round *Round1) MessageType() messages.MessageType {
 	return messages.MessageTypeKeyGen1
 }
