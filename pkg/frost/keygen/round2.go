@@ -18,7 +18,7 @@ func (round *Round2) ProcessMessage(msg *messages.Message) *state.Error {
 	id := msg.From
 	shareExp := round.Commitments[id].Evaluate(round.SelfID().Scalar())
 
-	fmt.Println("round2ProcessMessage...", id, msg.KeyGen2.Share, round.Commitments[id], round.SelfID().Scalar())
+	fmt.Println("round2ProcessMessage...", id, msg.KeyGen2.Share, round.Commitments[id], round.SelfID())
 	if computedShareExp.Equal(shareExp) != 1 {
 		return state.NewError(id, errors.New("VSS failed to validate"))
 	}
