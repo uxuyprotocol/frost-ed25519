@@ -266,6 +266,7 @@ type stateJSON struct {
 	Queue            [][]byte               `json:"queue"`
 	RoundNumber      int                    `json:"roundNumber"`
 	Round            []byte                 `json:"round"`
+	Done             bool                   `json:"done,omitempty"`
 }
 
 // MarshalJSON implements the json.Marshaller interface.
@@ -303,6 +304,7 @@ func (s *State) MarshalJSON() ([]byte, error) {
 		Queue:            queueContainer,
 		RoundNumber:      s.roundNumber,
 		Round:            roundData,
+		Done:             s.done,
 	})
 }
 
@@ -356,6 +358,7 @@ func (s *State) UnmarshalJSON(data []byte) error {
 		//round:            r1,
 		RoundData: rawJson.Round,
 		doneChan:  make(chan struct{}),
+		done:      rawJson.Done,
 	}
 
 	return nil

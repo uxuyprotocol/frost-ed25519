@@ -737,7 +737,7 @@ func SliceKeyGenRound0(n int, index int) (helpers.KeyGenOutState, []byte, error)
 	err = helpers.UnmarshalKGOutState(&result2, d)
 	fmt.Println(result, result2)
 
-	return result2, d, err
+	return result, d, err
 }
 
 // SliceKeyGenRound1 生成密钥分片 round1
@@ -763,6 +763,12 @@ func SliceKeyGenRound1(index int, outStateData []byte, outState1 helpers.KeyGenO
 		outState1.Message1 = append(yMsg, outState1.Message1...)
 	}
 
+	println("sround11: ----------------------------------------------")
+	fmt.Println(outState1.Message1, outState1.State.RoundData, outState1.State)
+	println("sround12: ----------------------------------------------")
+	fmt.Println(outState.Message1, outState.State.RoundData, outState.State)
+	println("sround end: ----------------------------------------------")
+
 	msgs2, err := helpers.PartyRoutine(outState1.Message1, outState1.State)
 	if err != nil {
 		fmt.Println(err)
@@ -783,7 +789,7 @@ func SliceKeyGenRound1(index int, outStateData []byte, outState1 helpers.KeyGenO
 	err = helpers.UnmarshalKGOutState(&result2, d)
 	fmt.Println(outState, result2)
 
-	return result2, d, err
+	return outState1, d, err
 }
 
 // SliceKeyGenRound2 生成密钥分片 round2
@@ -807,17 +813,17 @@ func SliceKeyGenRound2(index int, outState1 helpers.KeyGenOutState, outStateData
 		outState.Message2 = append(yMsg, outState.Message2...)
 	}
 
-	if index == 0 {
-		outState1.Message2 = append(outState1.Message2, yMsg...)
-	} else {
-		outState1.Message2 = append(yMsg, outState1.Message2...)
-	}
+	//if index == 0 {
+	//	outState1.Message2 = append(outState1.Message2, yMsg...)
+	//} else {
+	//	outState1.Message2 = append(yMsg, outState1.Message2...)
+	//}
 
-	_, err = helpers.PartyRoutine(outState1.Message2, outState1.State)
-	if err != nil {
-		fmt.Println(err)
-		return helpers.KeyGenOutState{}, nil, err
-	}
+	//_, err = helpers.PartyRoutine(outState1.Message2, outState1.State)
+	//if err != nil {
+	//	fmt.Println(err)
+	//	return helpers.KeyGenOutState{}, nil, err
+	//}
 
 	_, err = helpers.PartyRoutine(outState.Message2, outState.State)
 	if err != nil {
@@ -828,7 +834,7 @@ func SliceKeyGenRound2(index int, outState1 helpers.KeyGenOutState, outStateData
 	stateData2, err := helpers.MarshalKGOutState(&outState)
 	err = helpers.UnmarshalKGOutState(&outState, stateData2)
 
-	return outState, stateData2, err
+	return outState1, stateData2, err
 }
 
 // DKGSlice 生成最终密钥分片分片
@@ -839,6 +845,9 @@ func DKGSlice(n int, oustateData []byte, outState1 helpers.KeyGenOutState) (stri
 	if err != nil {
 		return "", err
 	}
+
+	//TODO:
+	//outState = outState1
 
 	// Get the public data
 	estate := outState.State
