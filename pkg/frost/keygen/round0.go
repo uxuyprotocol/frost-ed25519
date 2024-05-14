@@ -45,3 +45,7 @@ func (round *Round0) GenerateMessages() ([]*messages.Message, *state.Error) {
 func (round *Round0) NextRound() state.Round {
 	return &Round1{round}
 }
+
+func (round *Round0) GetOutput() interface{} {
+	return round.Output
+}

@@ -825,10 +825,19 @@ func SliceKeyGenRound2(index int, outState1 helpers.KeyGenOutState, outStateData
 	//	return helpers.KeyGenOutState{}, nil, err
 	//}
 
-	_, err = helpers.PartyRoutine(outState.Message2, outState.State)
+	helpers.ResetKeygenOutputPointee(&outState)
+	helpers.ResetKeygenOutputPointee(&outState1)
+
+	_, err = helpers.PartyRoutine(outState1.Message2, outState1.State)
 	if err != nil {
 		fmt.Println(err)
 		return helpers.KeyGenOutState{}, nil, err
+	}
+
+	_, err = helpers.PartyRoutine(outState.Message2, outState.State)
+	if err != nil {
+		fmt.Println(err)
+		//return helpers.KeyGenOutState{}, nil, err
 	}
 
 	stateData2, err := helpers.MarshalKGOutState(&outState)

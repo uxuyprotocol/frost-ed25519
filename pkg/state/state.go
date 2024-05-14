@@ -144,6 +144,7 @@ func (s *State) ProcessAll() []*messages.Message {
 	}
 
 	// Only continue if we received messages from all
+	fmt.Println("psmsg: ", len(s.receivedMessages), s.round.PartyIDs().N()-1)
 	if len(s.receivedMessages) != int(s.round.PartyIDs().N()-1) {
 		return nil
 	}

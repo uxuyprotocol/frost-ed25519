@@ -50,3 +50,7 @@ func (round *Round2) NextRound() state.Round {
 func (round *Round2) MessageType() messages.MessageType {
 	return messages.MessageTypeKeyGen2
 }
+
+func (round *Round2) GetOutput() interface{} {
+	return round.Output
+}

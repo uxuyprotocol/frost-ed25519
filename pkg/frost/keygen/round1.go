@@ -47,3 +47,7 @@ func (round *Round1) NextRound() state.Round {
 func (round *Round1) MessageType() messages.MessageType {
 	return messages.MessageTypeKeyGen1
 }
+
+func (round *Round1) GetOutput() interface{} {
+	return round.Output
+}

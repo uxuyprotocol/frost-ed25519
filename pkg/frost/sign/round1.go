@@ -109,3 +109,7 @@ func (round *round1) GenerateMessages() ([]*messages.Message, *state.Error) {
 func (round *round1) NextRound() state.Round {
 	return &round2{round}
 }
+
+func (round *round1) GetOutput() interface{} {
+	return round.Output
+}

@@ -76,6 +76,11 @@ func UnmarshalKGState(newState *state.State, data []byte) error {
 
 }
 
+// SetOutput 改变 output 指针指向
+func (s *KeyGenOutState) SetOutput(o *keygen.Output) {
+	s.Output = o
+}
+
 func MarshalKGOutState(s *KeyGenOutState) ([]byte, error) {
 
 	sdata, err := json.Marshal(s.State)
@@ -102,4 +107,10 @@ func UnmarshalKGOutState(s *KeyGenOutState, data []byte) error {
 	//s.State = nstate
 
 	return err
+}
+
+// ResetKeygenOutputPointee 设置指针...
+func ResetKeygenOutputPointee(state *KeyGenOutState) {
+	o := state.State.GetRound().GetOutput().(*keygen.Output)
+	state.Output = o
 }
