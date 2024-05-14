@@ -775,7 +775,7 @@ func SliceKeyGenRound1(index int, outStateData []byte, yMessage string) ([]byte,
 	d, err := helpers.MarshalKGOutState(&outState)
 	var result2 helpers.KeyGenOutState
 	err = helpers.UnmarshalKGOutState(&result2, d)
-	fmt.Println(outState, result2)
+	//fmt.Println(outState, result2)
 
 	fmt.Println("round1 end----------------------------------------------")
 	return d, err
