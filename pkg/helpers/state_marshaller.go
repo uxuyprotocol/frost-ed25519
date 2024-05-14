@@ -42,7 +42,7 @@ func UnmarshalKGState(newState *state.State, data []byte) error {
 
 	switch newState.GetRoundNumber() {
 	case 1:
-		var round0 keygen.Round0
+		var round0 keygen.Round1
 		err = json.Unmarshal(newState.RoundData, &round0)
 		if err != nil {
 			fmt.Println(err)
@@ -52,7 +52,7 @@ func UnmarshalKGState(newState *state.State, data []byte) error {
 		return nil
 
 	case 2:
-		var round0 keygen.Round1
+		var round0 keygen.Round2
 		err = json.Unmarshal(newState.RoundData, &round0)
 		if err != nil {
 			fmt.Println(err)

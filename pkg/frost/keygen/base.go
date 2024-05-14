@@ -3,6 +3,7 @@ package keygen
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/taurusgroup/frost-ed25519/pkg/frost/party"
 	"github.com/taurusgroup/frost-ed25519/pkg/internal/polynomial"
@@ -87,7 +88,7 @@ func (round *Round0) AcceptedMessageTypes() []messages.MessageType {
 }
 
 type Round0JSON struct {
-	Base *state.BaseRound `json:"base"`
+	Base []byte `json:"base"`
 
 	Threshold party.Size `json:"threshold"`
 
@@ -97,20 +98,36 @@ type Round0JSON struct {
 
 	CommitmentsSum *polynomial.Exponent `json:"commitments_sum,omitempty"`
 
-	Commitments map[party.ID]*polynomial.Exponent `json:"commitments,omitempty"`
+	Commitments map[party.ID][]byte `json:"commitments,omitempty"`
 
 	Output *Output `json:"output,omitempty"`
 }
 
 func (round *Round0) MarshalJSON() ([]byte, error) {
 
+	var base = round.BaseRound
+	baseBytes, err := json.Marshal(&base)
+
+	fmt.Println("commits", round.Commitments)
+	var commitmentsData = make(map[party.ID][]byte, len(round.Commitments))
+	for id, v := range round.Commitments {
+		b, err := v.MarshalBinary()
+		if err != nil {
+			fmt.Println(err)
+			break
+		}
+		if b != nil {
+			commitmentsData[id] = b
+		}
+	}
+
 	rawJson := Round0JSON{
-		round.BaseRound,
+		baseBytes,
 		round.Threshold,
 		round.Secret,
 		round.Polynomial,
 		round.CommitmentsSum,
-		round.Commitments,
+		commitmentsData,
 		round.Output,
 	}
 	result, err := json.Marshal(&rawJson)
@@ -127,20 +144,66 @@ func (round *Round0) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	//var baseRound *state.BaseRound
-	//err := json.Unmarshal(rawJson.Base, &baseRound)
+	var baseRound state.BaseRound
+	err = json.Unmarshal(rawJson.Base, &baseRound)
 
-	*round = Round0{
-		BaseRound:      rawJson.Base,
-		Threshold:      rawJson.Threshold,
-		Secret:         rawJson.Secret,
-		Polynomial:     rawJson.Polynomial,
-		CommitmentsSum: rawJson.CommitmentsSum,
-		Commitments:    rawJson.Commitments,
-		Output:         rawJson.Output,
+	var commitments = make(map[party.ID]*polynomial.Exponent, len(rawJson.Commitments))
+	for id, v := range rawJson.Commitments {
+		var exponent polynomial.Exponent
+		err := exponent.UnmarshalBinary(v)
+		if err != nil {
+			fmt.Println(err)
+			break
+		}
+		commitments[id] = &exponent
 	}
+
+	round.Threshold = rawJson.Threshold
+	round.Secret = rawJson.Secret
+	round.Polynomial = rawJson.Polynomial
+	round.CommitmentsSum = rawJson.CommitmentsSum
+	round.Commitments = commitments
+	round.Output = rawJson.Output
+	round.BaseRound = &baseRound
+
+	return err
+}
+
+func (round *Round1) MarshalJSON() ([]byte, error) {
+
+	var round0 = round.Round0
+	data, err := json.Marshal(&round0)
+	return data, err
+}
+
+func (round *Round1) UnmarshalJSON(data []byte) error {
+	var round0 Round0
+	err := json.Unmarshal(data, &round0)
+	if err != nil {
+		return err
+	}
+	round.Round0 = &round0
 	return nil
 }
+
+func (round *Round2) MarshalJSON() ([]byte, error) {
+
+	var round1 = round.Round1
+	data, err := json.Marshal(&round1)
+	return data, err
+}
+
+func (round *Round2) UnmarshalJSON(data []byte) error {
+	var round1 Round1
+	err := json.Unmarshal(data, &round1)
+	if err != nil {
+		return err
+	}
+	round.Round1 = &round1
+	return nil
+}
+
+/*
 
 func (round *Round0) MarshalRound() ([]byte, error) {
 	return json.Marshal(&round)
@@ -158,9 +221,13 @@ func (round *Round1) MarshalRound() ([]byte, error) {
 }
 
 func (round *Round1) UnmarshalRound(data []byte) (state.Round, error) {
-	var result state.Round
+	var result Round0
 	err := json.Unmarshal(data, &result)
-	return result, err
+	if err != nil {
+		return nil, err
+	}
+	round.Round0 = &result
+	return round, err
 
 }
 
@@ -169,11 +236,17 @@ func (round *Round2) MarshalRound() ([]byte, error) {
 }
 
 func (round *Round2) UnmarshalRound(data []byte) (state.Round, error) {
-	var result state.Round
+	var result Round1
 	err := json.Unmarshal(data, &result)
-	return result, err
+	if err != nil {
+		return nil, err
+	}
+	round.Round1 = &result
+	return round, err
 
 }
+
+*/
 
 //
 //func (round *Round1) MarshalJSON() ([]byte, error) {

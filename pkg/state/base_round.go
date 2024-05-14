@@ -1,6 +1,7 @@
 package state
 
 import (
+	"encoding/json"
 	"errors"
 
 	"github.com/taurusgroup/frost-ed25519/pkg/frost/party"
@@ -34,14 +35,37 @@ func (r BaseRound) PartyIDs() party.IDSlice {
 	return r.partyIDs
 }
 
-//type baseRoundJSON struct {
-//	SelfID    party.ID 		`json:"selfID"`
-//	PartyIDs party.IDSlice      `json:"partIDs"`
-//}
-//
-//func (r BaseRound) MarshalJSON() ([]byte, error) {
-//	return json.Marshal(baseRoundJSON{
-//		r.selfID,
-//		r.partyIDs,
-//	})
-//}
+type baseRoundJSON struct {
+	SelfID   uint16   `json:"selfID"`
+	PartyIDs []uint16 `json:"partIDs"`
+}
+
+func (r *BaseRound) MarshalJSON() ([]byte, error) {
+	data := make([]uint16, len(r.partyIDs))
+	for i, id := range r.partyIDs {
+		data[i] = uint16(id)
+	}
+	return json.Marshal(baseRoundJSON{
+		uint16(r.selfID),
+		data,
+	})
+}
+
+func (r *BaseRound) UnmarshalJSON(data []byte) error {
+
+	var rawjson baseRoundJSON
+	err := json.Unmarshal(data, &rawjson)
+	if err != nil {
+		return err
+	}
+
+	slice := make([]party.ID, len(rawjson.PartyIDs))
+	for i, id := range rawjson.PartyIDs {
+		slice[i] = party.ID(id)
+	}
+
+	r.selfID = party.ID(rawjson.SelfID)
+	r.partyIDs = slice
+
+	return nil
+}

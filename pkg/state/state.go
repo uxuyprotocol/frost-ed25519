@@ -281,7 +281,7 @@ func (s *State) MarshalJSON() ([]byte, error) {
 		recContainer[uint16(id)] = data
 	}
 
-	queueContainer := make([][]byte, cap(s.queue))
+	queueContainer := make([][]byte, len(s.queue))
 	for _, q := range s.queue {
 		data, err := q.MarshalBinary()
 		if err != nil {
@@ -324,7 +324,7 @@ func (s *State) UnmarshalJSON(data []byte) error {
 		recContainer[party.ID(id)] = &msg1
 	}
 
-	queueContainer := make([]*messages.Message, cap(rawJson.Queue))
+	queueContainer := make([]*messages.Message, len(rawJson.Queue))
 	for i, q := range rawJson.Queue {
 		if q == nil {
 			continue
