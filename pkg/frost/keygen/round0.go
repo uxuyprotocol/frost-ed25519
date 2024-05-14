@@ -1,6 +1,7 @@
 package keygen
 
 import (
+	"fmt"
 	"github.com/taurusgroup/frost-ed25519/pkg/internal/polynomial"
 	"github.com/taurusgroup/frost-ed25519/pkg/internal/scalar"
 	"github.com/taurusgroup/frost-ed25519/pkg/internal/zk"
@@ -36,6 +37,8 @@ func (round *Round0) GenerateMessages() ([]*messages.Message, *state.Error) {
 	round.Secret.Set(round.Polynomial.Evaluate(round.SelfID().Scalar()))
 
 	msg := messages.NewKeyGen1(round.SelfID(), proof, round.CommitmentsSum)
+
+	fmt.Println("woods_113: ", round.SelfID(), proof, msg, round.CommitmentsSum)
 	return []*messages.Message{msg}, nil
 }
 

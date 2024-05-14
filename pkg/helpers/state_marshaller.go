@@ -92,7 +92,14 @@ func UnmarshalKGOutState(s *KeyGenOutState, data []byte) error {
 	if err != nil {
 		return err
 	}
-
 	err = UnmarshalKGState(s.State, s.StateData)
+	//
+	//round := s.State.GetRound()
+	//nstate, err := state.NewBaseState(round, 0)
+	//if err != nil {
+	//	return err
+	//}
+	//s.State = nstate
+
 	return err
 }

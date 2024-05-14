@@ -92,11 +92,11 @@ type Round0JSON struct {
 
 	Threshold party.Size `json:"threshold"`
 
-	Secret ristretto.Scalar `json:"secret,omitempty"`
+	Secret []byte `json:"secret,omitempty"`
 
 	Polynomial *polynomial.Polynomial `json:"polynomial,omitempty"`
 
-	CommitmentsSum *polynomial.Exponent `json:"commitments_sum,omitempty"`
+	CommitmentsSum []byte `json:"commitments_sum,omitempty"`
 
 	Commitments map[party.ID][]byte `json:"commitments,omitempty"`
 
@@ -121,12 +121,19 @@ func (round *Round0) MarshalJSON() ([]byte, error) {
 		}
 	}
 
+	comdata, err := round.CommitmentsSum.MarshalBinary()
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	sec := round.Secret.Bytes()
+
 	rawJson := Round0JSON{
 		baseBytes,
 		round.Threshold,
-		round.Secret,
+		sec,
 		round.Polynomial,
-		round.CommitmentsSum,
+		comdata,
 		commitmentsData,
 		round.Output,
 	}
@@ -158,10 +165,22 @@ func (round *Round0) UnmarshalJSON(data []byte) error {
 		commitments[id] = &exponent
 	}
 
+	var commitmentsSum polynomial.Exponent
+	err = commitmentsSum.UnmarshalBinary(rawJson.CommitmentsSum)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	var sec = ristretto.NewScalar()
+	sec, err = sec.SetBytesWithClamping(rawJson.Secret)
+	if err != nil {
+		panic(err)
+	}
+
 	round.Threshold = rawJson.Threshold
-	round.Secret = rawJson.Secret
+	round.Secret = *sec
 	round.Polynomial = rawJson.Polynomial
-	round.CommitmentsSum = rawJson.CommitmentsSum
+	round.CommitmentsSum = &commitmentsSum
 	round.Commitments = commitments
 	round.Output = rawJson.Output
 	round.BaseRound = &baseRound
@@ -202,77 +221,3 @@ func (round *Round2) UnmarshalJSON(data []byte) error {
 	round.Round1 = &round1
 	return nil
 }
-
-/*
-
-func (round *Round0) MarshalRound() ([]byte, error) {
-	return json.Marshal(&round)
-}
-
-func (round *Round0) UnmarshalRound(data []byte) (state.Round, error) {
-	var result state.Round
-	err := json.Unmarshal(data, &result)
-	return result, err
-
-}
-
-func (round *Round1) MarshalRound() ([]byte, error) {
-	return json.Marshal(&round)
-}
-
-func (round *Round1) UnmarshalRound(data []byte) (state.Round, error) {
-	var result Round0
-	err := json.Unmarshal(data, &result)
-	if err != nil {
-		return nil, err
-	}
-	round.Round0 = &result
-	return round, err
-
-}
-
-func (round *Round2) MarshalRound() ([]byte, error) {
-	return json.Marshal(&round)
-}
-
-func (round *Round2) UnmarshalRound(data []byte) (state.Round, error) {
-	var result Round1
-	err := json.Unmarshal(data, &result)
-	if err != nil {
-		return nil, err
-	}
-	round.Round1 = &result
-	return round, err
-
-}
-
-*/
-
-//
-//func (round *Round1) MarshalJSON() ([]byte, error) {
-//	return json.Marshal(round.Round0)
-//}
-//
-//func (round *Round1) UnmarshalJSON(data []byte) error {
-//	var Round0 Round0
-//	err := json.Unmarshal(data, &Round0)
-//	if err != nil {
-//		return err
-//	}
-//	round.Round0 = &Round0
-//	return nil
-//}
-//
-//func (round *Round2) MarshalJSON() ([]byte, error) {
-//	return json.Marshal(round.Round1)
-//}
-//
-//func (round *Round2) UnmarshalJSON(data []byte) error {
-//	var Round1 Round1
-//	err := json.Unmarshal(data, &Round1)
-//	if err != nil {
-//		return err
-//	}
-//	round.Round1 = &Round1
-//	return nil
-//}

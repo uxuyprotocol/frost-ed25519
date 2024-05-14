@@ -149,6 +149,7 @@ func (s *State) ProcessAll() []*messages.Message {
 	}
 
 	for _, msg := range s.receivedMessages {
+
 		if err := s.round.ProcessMessage(msg); err != nil {
 			s.reportError(err)
 			return nil
@@ -161,6 +162,7 @@ func (s *State) ProcessAll() []*messages.Message {
 	}
 
 	newMessages, err := s.round.GenerateMessages()
+	fmt.Println("woods_112: ", newMessages)
 	if err != nil {
 		s.reportError(err)
 		return nil
@@ -365,6 +367,10 @@ func (s *State) SetRound(round Round) {
 
 func (s *State) GetRoundNumber() int {
 	return s.roundNumber
+}
+
+func (s *State) GetRound() Round {
+	return s.round
 }
 
 //

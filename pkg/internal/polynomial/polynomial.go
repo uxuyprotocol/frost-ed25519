@@ -2,8 +2,8 @@ package polynomial
 
 import (
 	"crypto/rand"
+	"encoding/json"
 	"fmt"
-
 	"github.com/taurusgroup/frost-ed25519/pkg/frost/party"
 	"github.com/taurusgroup/frost-ed25519/pkg/ristretto"
 )
@@ -73,4 +73,38 @@ func (p *Polynomial) Reset() {
 	for i := range p.coefficients {
 		p.coefficients[i].Set(zero)
 	}
+}
+
+func (p *Polynomial) MarshalJSON() ([]byte, error) {
+
+	var data = make([][]byte, len(p.coefficients))
+	for i, c := range p.coefficients {
+		data[i] = c.Bytes()
+	}
+
+	return json.Marshal(data)
+}
+
+func (p *Polynomial) UnmarshalJSON(data []byte) error {
+
+	var items [][]byte
+	err := json.Unmarshal(data, &items)
+	if err != nil {
+		return err
+	}
+
+	p.coefficients = make([]ristretto.Scalar, len(items))
+
+	for i, item := range items {
+
+		var s = ristretto.NewScalar()
+		s, err = s.SetBytesWithClamping(item)
+		if err != nil {
+			return err
+		}
+		p.coefficients[i] = *s
+	}
+
+	//p.coefficients = p1
+	return nil
 }
