@@ -697,7 +697,7 @@ func KeygenString2Msg(kMsgStr string) [][]byte {
 }
 
 // SliceKeyGenRound0 keygen 阶段1 - 初始化 state
-func SliceKeyGenRound0(n int, index int) (helpers.KeyGenOutState, []byte, error) {
+func SliceKeyGenRound0(n int, index int) ([]byte, error) {
 
 	var err error
 
@@ -709,7 +709,7 @@ func SliceKeyGenRound0(n int, index int) (helpers.KeyGenOutState, []byte, error)
 	estate, output, err := frost.NewKeygenState(partyID, partyIDs, party.Size(n-1), 0)
 	if err != nil {
 		fmt.Println(err)
-		return helpers.KeyGenOutState{}, nil, err
+		return nil, err
 	}
 
 	msgsOut1 := make([][]byte, 0, n)
@@ -719,7 +719,7 @@ func SliceKeyGenRound0(n int, index int) (helpers.KeyGenOutState, []byte, error)
 	msgs1, err := helpers.PartyRoutine(nil, estate)
 	if err != nil {
 		fmt.Println(err)
-		return helpers.KeyGenOutState{}, nil, err
+		return nil, err
 	}
 	msgsOut1 = append(msgsOut1, msgs1...)
 
@@ -730,21 +730,19 @@ func SliceKeyGenRound0(n int, index int) (helpers.KeyGenOutState, []byte, error)
 		Message1: msgsOut1,
 	}
 
-	//TODO
-
 	d, err := helpers.MarshalKGOutState(&result)
 	var result2 helpers.KeyGenOutState
 	err = helpers.UnmarshalKGOutState(&result2, d)
 	fmt.Println(result, result2)
 
-	return result, d, err
+	return d, err
 }
 
 // SliceKeyGenRound1 生成密钥分片 round1
-func SliceKeyGenRound1(index int, outStateData []byte, outState1 helpers.KeyGenOutState, yMessage string) (helpers.KeyGenOutState, []byte, error) {
+func SliceKeyGenRound1(index int, outStateData []byte, yMessage string) ([]byte, error) {
 
 	if len(yMessage) == 0 {
-		return helpers.KeyGenOutState{}, nil, fmt.Errorf("remoteMessage is empty")
+		return nil, fmt.Errorf("remoteMessage is empty")
 	}
 
 	yMsg := KeygenString2Msg(yMessage)
@@ -752,35 +750,21 @@ func SliceKeyGenRound1(index int, outStateData []byte, outState1 helpers.KeyGenO
 	var outState helpers.KeyGenOutState
 	err := helpers.UnmarshalKGOutState(&outState, outStateData)
 	if err != nil {
-		return helpers.KeyGenOutState{}, nil, err
+		return nil, err
 	}
 
 	if index == 0 {
 		outState.Message1 = append(outState.Message1, yMsg...)
-		outState1.Message1 = append(outState1.Message1, yMsg...)
+
 	} else {
 		outState.Message1 = append(yMsg, outState.Message1...)
-		outState1.Message1 = append(yMsg, outState1.Message1...)
+
 	}
 
-	println("sround11: ----------------------------------------------")
-	fmt.Println(outState1.Message1, outState1.State.RoundData, outState1.State)
-	println("sround12: ----------------------------------------------")
-	fmt.Println(outState.Message1, outState.State.RoundData, outState.State)
-	println("sround end: ----------------------------------------------")
-
-	msgs2, err := helpers.PartyRoutine(outState1.Message1, outState1.State)
+	msgs2, err := helpers.PartyRoutine(outState.Message1, outState.State)
 	if err != nil {
 		fmt.Println(err)
-		return helpers.KeyGenOutState{}, nil, err
-	}
-
-	outState1.Message2 = append(outState1.Message2, msgs2...)
-
-	msgs2, err = helpers.PartyRoutine(outState.Message1, outState.State)
-	if err != nil {
-		fmt.Println(err)
-		return helpers.KeyGenOutState{}, nil, err
+		return nil, err
 	}
 	outState.Message2 = append(outState.Message2, msgs2...)
 
@@ -789,14 +773,14 @@ func SliceKeyGenRound1(index int, outStateData []byte, outState1 helpers.KeyGenO
 	err = helpers.UnmarshalKGOutState(&result2, d)
 	fmt.Println(outState, result2)
 
-	return outState1, d, err
+	return d, err
 }
 
 // SliceKeyGenRound2 生成密钥分片 round2
-func SliceKeyGenRound2(index int, outState1 helpers.KeyGenOutState, outStateData []byte, yMessage string) (helpers.KeyGenOutState, []byte, error) {
+func SliceKeyGenRound2(index int, outStateData []byte, yMessage string) ([]byte, error) {
 
 	if len(yMessage) == 0 {
-		return helpers.KeyGenOutState{}, nil, fmt.Errorf("remoteMessage is empty")
+		return nil, fmt.Errorf("remoteMessage is empty")
 	}
 
 	yMsg := KeygenString2Msg(yMessage)
@@ -804,7 +788,7 @@ func SliceKeyGenRound2(index int, outState1 helpers.KeyGenOutState, outStateData
 	var outState helpers.KeyGenOutState
 	err := helpers.UnmarshalKGOutState(&outState, outStateData)
 	if err != nil {
-		return helpers.KeyGenOutState{}, nil, err
+		return nil, err
 	}
 
 	if index == 0 {
@@ -826,13 +810,6 @@ func SliceKeyGenRound2(index int, outState1 helpers.KeyGenOutState, outStateData
 	//}
 
 	helpers.ResetKeygenOutputPointee(&outState)
-	helpers.ResetKeygenOutputPointee(&outState1)
-
-	_, err = helpers.PartyRoutine(outState1.Message2, outState1.State)
-	if err != nil {
-		fmt.Println(err)
-		return helpers.KeyGenOutState{}, nil, err
-	}
 
 	_, err = helpers.PartyRoutine(outState.Message2, outState.State)
 	if err != nil {
@@ -843,20 +820,17 @@ func SliceKeyGenRound2(index int, outState1 helpers.KeyGenOutState, outStateData
 	stateData2, err := helpers.MarshalKGOutState(&outState)
 	err = helpers.UnmarshalKGOutState(&outState, stateData2)
 
-	return outState1, stateData2, err
+	return stateData2, err
 }
 
 // DKGSlice 生成最终密钥分片分片
-func DKGSlice(n int, oustateData []byte, outState1 helpers.KeyGenOutState) (string, error) {
+func DKGSlice(n int, oustateData []byte) (string, error) {
 
 	var outState helpers.KeyGenOutState
 	err := helpers.UnmarshalKGOutState(&outState, oustateData)
 	if err != nil {
 		return "", err
 	}
-
-	//TODO:
-	//outState = outState1
 
 	// Get the public data
 	estate := outState.State
@@ -1047,14 +1021,14 @@ func VerifySignature(groupKey *eddsa.PublicKey, message string, signature string
 // dpkTest 分布式分片生成
 func dpkTest() {
 	// client round0
-	cstate, cstateData, err := SliceKeyGenRound0(2, 0)
+	cstateData, err := SliceKeyGenRound0(2, 0)
 	if err != nil {
 		fmt.Println("kg1...", err)
 		return
 	}
 
 	// server round0
-	sstate, sstateData, err := SliceKeyGenRound0(2, 1)
+	sstateData, err := SliceKeyGenRound0(2, 1)
 	if err != nil {
 		fmt.Println("kg2...", err)
 		return
@@ -1074,14 +1048,9 @@ func dpkTest() {
 		return
 	}
 
-	smsg1 := KeygenMsg2String(sstate.Message1)
-	smsg11 := KeygenMsg2String(sstate2.Message1)
-	if smsg1 != smsg11 {
-		fmt.Println("kg5...", smsg1, smsg11)
-		return
-	}
+	smsg1 := KeygenMsg2String(sstate2.Message1)
 
-	cstate, cstateData, err = SliceKeyGenRound1(0, cstateData, cstate, smsg1)
+	cstateData, err = SliceKeyGenRound1(0, cstateData, smsg1)
 	if err != nil {
 		fmt.Println("kg6...", err)
 		return
@@ -1094,14 +1063,9 @@ func dpkTest() {
 	}
 
 	// server round1
-	cmsg1 := KeygenMsg2String(cstate.Message1)
-	cmsg11 := KeygenMsg2String(cstate2.Message1)
-	if cmsg1 != cmsg11 {
-		fmt.Println("kg8...", cmsg1, cmsg11)
-		return
-	}
+	cmsg1 := KeygenMsg2String(cstate2.Message1)
 
-	sstate, sstateData, err = SliceKeyGenRound1(1, sstateData, sstate, cmsg1)
+	sstateData, err = SliceKeyGenRound1(1, sstateData, cmsg1)
 	if err != nil {
 		fmt.Println("kg9...", err)
 		return
@@ -1137,13 +1101,9 @@ func dpkTest() {
 	//	return
 	//}
 
-	smsg1 = KeygenMsg2String(sstate.Message2)
-	smsg11 = KeygenMsg2String(sstate2.Message2)
-	if smsg1 != smsg11 {
-		fmt.Println("kg12 error...", smsg1, smsg11)
-		//return
-	}
-	cstate, cstateData, err = SliceKeyGenRound2(0, cstate, cstateData, smsg1)
+	smsg1 = KeygenMsg2String(sstate2.Message2)
+
+	cstateData, err = SliceKeyGenRound2(0, cstateData, smsg1)
 	if err != nil {
 		fmt.Println("kg13...", err)
 		return
@@ -1156,20 +1116,15 @@ func dpkTest() {
 	}
 
 	// server round2
-	cmsg1 = KeygenMsg2String(cstate.Message2)
-	cmsg11 = KeygenMsg2String(cstate2.Message2)
-	if cmsg1 != cmsg11 {
-		fmt.Println("kg15 error...", cmsg1, cmsg11)
-		//return
-	}
-	sstate, sstateData, err = SliceKeyGenRound2(1, sstate, sstateData, cmsg1)
+	cmsg1 = KeygenMsg2String(cstate2.Message2)
+	sstateData, err = SliceKeyGenRound2(1, sstateData, cmsg1)
 	if err != nil {
 		fmt.Println("kg16...", err)
 		return
 	}
 
 	// client gen slice
-	cslice, err := DKGSlice(2, cstateData, cstate)
+	cslice, err := DKGSlice(2, cstateData)
 	if err != nil {
 		fmt.Println("kg17...", err)
 		return
@@ -1177,7 +1132,7 @@ func dpkTest() {
 	fmt.Println("client slice: ", cslice)
 
 	// client gen slice
-	sslice, err := DKGSlice(2, sstateData, sstate)
+	sslice, err := DKGSlice(2, sstateData)
 	if err != nil {
 		fmt.Println("kg18...", err)
 		return
