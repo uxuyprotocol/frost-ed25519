@@ -699,6 +699,7 @@ func KeygenString2Msg(kMsgStr string) [][]byte {
 // SliceKeyGenRound0 keygen 阶段1 - 初始化 state
 func SliceKeyGenRound0(n int, index int) ([]byte, error) {
 
+	fmt.Println("round0----------------------------------------------")
 	var err error
 
 	partyIDs := helpers.GenerateSet(party.ID(n))
@@ -735,12 +736,14 @@ func SliceKeyGenRound0(n int, index int) ([]byte, error) {
 	err = helpers.UnmarshalKGOutState(&result2, d)
 	fmt.Println(result, result2)
 
+	fmt.Println("round0 end----------------------------------------------")
 	return d, err
 }
 
 // SliceKeyGenRound1 生成密钥分片 round1
 func SliceKeyGenRound1(index int, outStateData []byte, yMessage string) ([]byte, error) {
 
+	fmt.Println("round1----------------------------------------------")
 	if len(yMessage) == 0 {
 		return nil, fmt.Errorf("remoteMessage is empty")
 	}
@@ -773,12 +776,14 @@ func SliceKeyGenRound1(index int, outStateData []byte, yMessage string) ([]byte,
 	err = helpers.UnmarshalKGOutState(&result2, d)
 	fmt.Println(outState, result2)
 
+	fmt.Println("round1 end----------------------------------------------")
 	return d, err
 }
 
 // SliceKeyGenRound2 生成密钥分片 round2
 func SliceKeyGenRound2(index int, outStateData []byte, yMessage string) ([]byte, error) {
 
+	fmt.Println("round2----------------------------------------------")
 	if len(yMessage) == 0 {
 		return nil, fmt.Errorf("remoteMessage is empty")
 	}
@@ -820,6 +825,7 @@ func SliceKeyGenRound2(index int, outStateData []byte, yMessage string) ([]byte,
 	stateData2, err := helpers.MarshalKGOutState(&outState)
 	err = helpers.UnmarshalKGOutState(&outState, stateData2)
 
+	fmt.Println("round2 end----------------------------------------------")
 	return stateData2, err
 }
 

@@ -83,6 +83,7 @@ func (s *State) wrapError(err error, culprit party.ID) error {
 func (s *State) HandleMessage(msg *messages.Message) error {
 	senderID := msg.From
 
+	fmt.Println("handleMsg.....", senderID, s.round.SelfID(), s.roundNumber)
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
 
@@ -122,6 +123,7 @@ func (s *State) HandleMessage(msg *messages.Message) error {
 
 	if msg.Type == s.acceptedTypes[0] {
 		s.receivedMessages[senderID] = msg
+		fmt.Println("received accepted message", msg)
 	} else {
 		s.queue = append(s.queue, msg)
 	}
@@ -144,7 +146,8 @@ func (s *State) ProcessAll() []*messages.Message {
 	}
 
 	// Only continue if we received messages from all
-	fmt.Println("psmsg: ", len(s.receivedMessages), s.round.PartyIDs().N()-1)
+
+	fmt.Println("proMsg...", len(s.receivedMessages), s.round.PartyIDs().N()-1, s.roundNumber)
 	if len(s.receivedMessages) != int(s.round.PartyIDs().N()-1) {
 		return nil
 	}
@@ -163,7 +166,6 @@ func (s *State) ProcessAll() []*messages.Message {
 	}
 
 	newMessages, err := s.round.GenerateMessages()
-	fmt.Println("woods_112: ", newMessages)
 	if err != nil {
 		s.reportError(err)
 		return nil
@@ -188,6 +190,7 @@ func (s *State) ProcessAll() []*messages.Message {
 	nextRound := s.round.NextRound()
 	if nextRound == nil {
 		s.finish()
+		fmt.Println("finish next round")
 	} else {
 		s.roundNumber++
 		s.round = nextRound

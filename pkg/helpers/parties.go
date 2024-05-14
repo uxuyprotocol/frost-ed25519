@@ -37,11 +37,13 @@ func PartyRoutine(in [][]byte, s *state.State) ([][]byte, error) {
 	for _, msgOut := range msgsOut {
 		if b, err := msgOut.MarshalBinary(); err == nil {
 			out = append(out, b)
+			fmt.Println("appendMsg...", string(b))
 		} else {
 			return nil, err
 		}
 	}
 	if s.IsFinished() {
+		fmt.Println("finished2...")
 		err := s.WaitForError()
 		if err != nil {
 			return nil, err
