@@ -158,6 +158,7 @@ func (s *State) ProcessAll() []*messages.Message {
 			s.reportError(err)
 			return nil
 		}
+		fmt.Println("end processed message")
 	}
 
 	// remove all messages that have been processed

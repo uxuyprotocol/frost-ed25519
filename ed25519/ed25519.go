@@ -734,7 +734,7 @@ func SliceKeyGenRound0(n int, index int) ([]byte, error) {
 	d, err := helpers.MarshalKGOutState(&result)
 	var result2 helpers.KeyGenOutState
 	err = helpers.UnmarshalKGOutState(&result2, d)
-	fmt.Println(result, result2)
+	//fmt.Println(result, result2)
 
 	fmt.Println("round0 end----------------------------------------------")
 	return d, err
@@ -765,6 +765,7 @@ func SliceKeyGenRound1(index int, outStateData []byte, yMessage string) ([]byte,
 	}
 
 	msgs2, err := helpers.PartyRoutine(outState.Message1, outState.State)
+	fmt.Println("end part1...", outState.Output.Public, outState.Output.SecretKey)
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
@@ -817,6 +818,7 @@ func SliceKeyGenRound2(index int, outStateData []byte, yMessage string) ([]byte,
 	helpers.ResetKeygenOutputPointee(&outState)
 
 	_, err = helpers.PartyRoutine(outState.Message2, outState.State)
+	fmt.Println("end part2...", outState.Output.Public, outState.Output.SecretKey)
 	if err != nil {
 		fmt.Println(err)
 		//return helpers.KeyGenOutState{}, nil, err

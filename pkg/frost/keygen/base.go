@@ -108,7 +108,6 @@ func (round *Round0) MarshalJSON() ([]byte, error) {
 	var base = round.BaseRound
 	baseBytes, err := json.Marshal(&base)
 
-	fmt.Println("commits", round.Commitments)
 	var commitmentsData = make(map[party.ID][]byte, len(round.Commitments))
 	for id, v := range round.Commitments {
 		b, err := v.MarshalBinary()
