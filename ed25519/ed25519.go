@@ -737,7 +737,7 @@ func SliceKeyGenRound0(n int, index int) (helpers.KeyGenOutState, []byte, error)
 	err = helpers.UnmarshalKGOutState(&result2, d)
 	fmt.Println(result, result2)
 
-	return result, d, err
+	return result2, d, err
 }
 
 // SliceKeyGenRound1 生成密钥分片 round1
@@ -783,7 +783,7 @@ func SliceKeyGenRound1(index int, outStateData []byte, outState1 helpers.KeyGenO
 	err = helpers.UnmarshalKGOutState(&result2, d)
 	fmt.Println(outState, result2)
 
-	return outState1, d, err
+	return result2, d, err
 }
 
 // SliceKeyGenRound2 生成密钥分片 round2
@@ -828,11 +828,17 @@ func SliceKeyGenRound2(index int, outState1 helpers.KeyGenOutState, outStateData
 	stateData2, err := helpers.MarshalKGOutState(&outState)
 	err = helpers.UnmarshalKGOutState(&outState, stateData2)
 
-	return outState1, stateData2, err
+	return outState, stateData2, err
 }
 
 // DKGSlice 生成最终密钥分片分片
-func DKGSlice(n int, outState helpers.KeyGenOutState) (string, error) {
+func DKGSlice(n int, oustateData []byte, outState1 helpers.KeyGenOutState) (string, error) {
+
+	var outState helpers.KeyGenOutState
+	err := helpers.UnmarshalKGOutState(&outState, oustateData)
+	if err != nil {
+		return "", err
+	}
 
 	// Get the public data
 	estate := outState.State
@@ -870,7 +876,7 @@ func DKGSlice(n int, outState helpers.KeyGenOutState) (string, error) {
 		Shares:  filteredPubs,
 	}
 	var jsonData []byte
-	jsonData, err := json.MarshalIndent(kgOutput, "", " ")
+	jsonData, err = json.MarshalIndent(kgOutput, "", " ")
 	if err != nil {
 		fmt.Println(err)
 		return "", err
@@ -1059,13 +1065,13 @@ func dpkTest() {
 
 	cstate, cstateData, err = SliceKeyGenRound1(0, cstateData, cstate, smsg1)
 	if err != nil {
-		fmt.Println("kg3...", err)
+		fmt.Println("kg6...", err)
 		return
 	}
 
 	err = helpers.UnmarshalKGOutState(&cstate2, cstateData)
 	if err != nil {
-		fmt.Println("kg3...", err)
+		fmt.Println("kg7...", err)
 		return
 	}
 
@@ -1073,24 +1079,24 @@ func dpkTest() {
 	cmsg1 := KeygenMsg2String(cstate.Message1)
 	cmsg11 := KeygenMsg2String(cstate2.Message1)
 	if cmsg1 != cmsg11 {
-		fmt.Println("kg4...", cmsg1, cmsg11)
+		fmt.Println("kg8...", cmsg1, cmsg11)
 		return
 	}
 
 	sstate, sstateData, err = SliceKeyGenRound1(1, sstateData, sstate, cmsg1)
 	if err != nil {
-		fmt.Println("kg4...", err)
+		fmt.Println("kg9...", err)
 		return
 	}
 
 	err = helpers.UnmarshalKGOutState(&sstate2, sstateData)
 	if err != nil {
-		fmt.Println("kg4...", err)
+		fmt.Println("kg10...", err)
 		return
 	}
 	err = helpers.UnmarshalKGOutState(&cstate2, cstateData)
 	if err != nil {
-		fmt.Println("kg4...", err)
+		fmt.Println("kg11...", err)
 		return
 	}
 
@@ -1116,18 +1122,18 @@ func dpkTest() {
 	smsg1 = KeygenMsg2String(sstate.Message2)
 	smsg11 = KeygenMsg2String(sstate2.Message2)
 	if smsg1 != smsg11 {
-		fmt.Println("kg6 error...", smsg1, smsg11)
+		fmt.Println("kg12 error...", smsg1, smsg11)
 		//return
 	}
 	cstate, cstateData, err = SliceKeyGenRound2(0, cstate, cstateData, smsg1)
 	if err != nil {
-		fmt.Println("kg5...", err)
+		fmt.Println("kg13...", err)
 		return
 	}
 
 	err = helpers.UnmarshalKGOutState(&cstate2, cstateData)
 	if err != nil {
-		fmt.Println("kg4...", err)
+		fmt.Println("kg14...", err)
 		return
 	}
 
@@ -1135,27 +1141,27 @@ func dpkTest() {
 	cmsg1 = KeygenMsg2String(cstate.Message2)
 	cmsg11 = KeygenMsg2String(cstate2.Message2)
 	if cmsg1 != cmsg11 {
-		fmt.Println("kg12 error...", cmsg1, cmsg11)
+		fmt.Println("kg15 error...", cmsg1, cmsg11)
 		//return
 	}
 	sstate, sstateData, err = SliceKeyGenRound2(1, sstate, sstateData, cmsg1)
 	if err != nil {
-		fmt.Println("kg6...", err)
+		fmt.Println("kg16...", err)
 		return
 	}
 
 	// client gen slice
-	cslice, err := DKGSlice(2, cstate)
+	cslice, err := DKGSlice(2, cstateData, cstate)
 	if err != nil {
-		fmt.Println("kg7...", err)
+		fmt.Println("kg17...", err)
 		return
 	}
 	fmt.Println("client slice: ", cslice)
 
 	// client gen slice
-	sslice, err := DKGSlice(2, sstate)
+	sslice, err := DKGSlice(2, sstateData, sstate)
 	if err != nil {
-		fmt.Println("kg8...", err)
+		fmt.Println("kg18...", err)
 		return
 	}
 	fmt.Println("server slice: ", sslice)
