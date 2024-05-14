@@ -1031,8 +1031,11 @@ func dpkTest() {
 	var cstate1 helpers.KeyGenOutState
 	var sstate1 helpers.KeyGenOutState
 
-	err = json.Unmarshal(cstate, &cstate1)
-	err = json.Unmarshal(sstate, &sstate1)
+	err = helpers.UnmarshalKGOutState(&cstate1, cstate)
+	err = helpers.UnmarshalKGOutState(&sstate1, sstate)
+
+	//err = json.Unmarshal(cstate, &cstate1)
+	//err = json.Unmarshal(sstate, &sstate1)
 	if err != nil {
 		fmt.Println("kg4...", err)
 		return
@@ -1054,8 +1057,11 @@ func dpkTest() {
 		return
 	}
 
-	err = json.Unmarshal(cstate, &cstate1)
-	err = json.Unmarshal(sstate, &sstate1)
+	err = helpers.UnmarshalKGOutState(&cstate1, cstate)
+	err = helpers.UnmarshalKGOutState(&sstate1, sstate)
+
+	//err = json.Unmarshal(cstate, &cstate1)
+	//err = json.Unmarshal(sstate, &sstate1)
 	if err != nil {
 		fmt.Println("kg4...", err)
 		return

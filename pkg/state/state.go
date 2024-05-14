@@ -353,6 +353,7 @@ func (s *State) UnmarshalJSON(data []byte) error {
 		roundNumber:      rawJson.RoundNumber,
 		//round:            r1,
 		RoundData: rawJson.Round,
+		doneChan:  make(chan struct{}),
 	}
 
 	return nil
