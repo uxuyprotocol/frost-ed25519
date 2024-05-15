@@ -1056,6 +1056,54 @@ func dpkTest() {
 		return
 	}
 
+	fmt.Println("--------------------test begin-----------------------------")
+
+	//statedata1, err := cstate2.State.MarshalJSON()
+	//statedata3, err := json.Marshal(cstate2.State)
+	//var cstate3 state.State
+	////err = json.Unmarshal(statedata1, &cstate3)
+	//err = cstate3.UnmarshalJSON(statedata1)
+	//statedata2, err := cstate3.MarshalJSON()
+	//fmt.Println("woods002: ")
+	//fmt.Println(statedata1)
+	//fmt.Println(statedata3)
+	//fmt.Println(statedata2)
+	//fmt.Println("----------------")
+
+	cstateData2, err := helpers.MarshalKGOutState(&cstate2)
+	var cstate3 helpers.KeyGenOutState
+	err = helpers.UnmarshalKGOutState(&cstate3, cstateData2)
+	statedata2, err := json.Marshal(cstate2.State)
+	statedata3, err := json.Marshal(cstate3.State)
+	var cstate4 helpers.KeyGenOutState
+	cstatedata3, err := helpers.MarshalKGOutState(&cstate3)
+	err = helpers.UnmarshalKGOutState(&cstate4, cstatedata3)
+	statedata4, err := json.Marshal(cstate4.State)
+
+	//odata1, err := json.Marshal(cstate2.Output)
+	//odata2, err := json.Marshal(cstate3.Output)
+	//odata3, err := json.Marshal(cstate4.Output)
+
+	//rdata1, err := json.Marshal(cstate2.State.GetRound())
+	//rdata2, err := json.Marshal(cstate3.State.GetRound())
+	//rdata3, err := json.Marshal(cstate4.State.GetRound())
+	//rdata4, err := json.Marshal(cstate4.State.GetRound())
+	//
+	//fmt.Println("woods2:------------------")
+	fmt.Println(len(statedata2), len(statedata3), len(statedata4))
+	fmt.Println(statedata2)
+	fmt.Println(statedata3)
+	fmt.Println(statedata4)
+	//fmt.Println(odata1)
+	//fmt.Println(odata2)
+	//fmt.Println(odata3)
+	//fmt.Println(len(rdata1), len(rdata2), len(rdata3), len(rdata4))
+	//fmt.Println(rdata1)
+	//fmt.Println(rdata2)
+	//fmt.Println(rdata3)
+	//fmt.Println(rdata4)
+	//fmt.Println("-------------------------")
+
 	smsg1 := KeygenMsg2String(sstate2.Message1)
 
 	cstateData, err = SliceKeyGenRound1(0, cstateData, smsg1)

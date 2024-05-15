@@ -98,7 +98,7 @@ func (p *Polynomial) UnmarshalJSON(data []byte) error {
 	for i, item := range items {
 
 		var s = ristretto.NewScalar()
-		s, err = s.SetBytesWithClamping(item)
+		s, err = s.SetCanonicalBytes(item)
 		if err != nil {
 			return err
 		}

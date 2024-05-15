@@ -137,6 +137,29 @@ func (round *Round0) MarshalJSON() ([]byte, error) {
 		round.Output,
 	}
 	result, err := json.Marshal(&rawJson)
+
+	//fmt.Println("r2----------------------------")
+	//
+	//b1 := sec
+	//b2, err := json.Marshal(round.Secret)
+	//sec1 := ristretto.NewScalar()
+	//sec1, err = sec1.SetCanonicalBytes(sec)
+	////sec2 := ristretto.NewScalar()
+	////sec2, err = sec2.SetUniformBytes(sec)
+	//b3 := sec1.Bytes()
+	////b4 := sec2.Bytes()
+	//
+	//fmt.Println(len(b1), len(b2), len(b3))
+	//fmt.Println(b1)
+	//fmt.Println(b2)
+	//fmt.Println(b3)
+	////fmt.Println(b4)
+	//
+	//fmt.Println("r2----------------------------end")
+
+	fmt.Println("r-----------------------", round.SelfID())
+	fmt.Println(rawJson)
+	fmt.Println("r-----------------------end")
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +194,7 @@ func (round *Round0) UnmarshalJSON(data []byte) error {
 	}
 
 	var sec = ristretto.NewScalar()
-	sec, err = sec.SetBytesWithClamping(rawJson.Secret)
+	sec, err = sec.SetCanonicalBytes(rawJson.Secret)
 	if err != nil {
 		panic(err)
 	}
