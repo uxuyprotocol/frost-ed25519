@@ -114,6 +114,10 @@ func destroyCommMap(m map[party.ID]communication.Communicator) {
 }
 
 func main() {
+	testMockServer()
+}
+
+func testMain() {
 	ns := []party.Size{5, 10, 50}
 
 	// what should work
