@@ -1,6 +1,8 @@
 package sign
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/taurusgroup/frost-ed25519/pkg/ristretto"
 )
 
@@ -43,4 +45,78 @@ func (signer *signer) Reset() {
 
 	signer.Pi.Set(zero)
 	signer.Zi.Set(zero)
+}
+
+type signerJSON struct {
+	Public []byte `json:"public"`
+	Di     []byte `json:"di"`
+	Ei     []byte `json:"ei"`
+	Ri     []byte `json:"ri"`
+	Pi     []byte `json:"pi"`
+	Zi     []byte `json:"zi"`
+}
+
+func (signer *signer) MarshalJSON() ([]byte, error) {
+
+	//rInital := signer.Ri.PointInited()
+
+	b1 := signer.Ri.Bytes()
+	fmt.Println(len(b1), b1)
+
+	rawjson := signerJSON{
+		Public: signer.Public.Bytes(),
+		Di:     signer.Di.Bytes(),
+		Ei:     signer.Ei.Bytes(),
+		Ri:     signer.Ri.Bytes(),
+		Pi:     signer.Pi.Bytes(),
+		Zi:     signer.Zi.Bytes(),
+	}
+
+	return json.Marshal(&rawjson)
+}
+
+func (signer *signer) UnmarshalJSON(data []byte) error {
+	var rawjson signerJSON
+	err := json.Unmarshal(data, &rawjson)
+	if err != nil {
+		return err
+	}
+	var public = ristretto.NewIdentityElement()
+	var di = ristretto.NewIdentityElement()
+	var ei = ristretto.NewIdentityElement()
+	var ri = ristretto.NewIdentityElement()
+	var pi = ristretto.NewScalar()
+	var zi = ristretto.NewScalar()
+	pub, err := public.SetCanonicalBytes(rawjson.Public)
+	if err != nil {
+		return err
+	}
+	d, err := di.SetCanonicalBytes(rawjson.Di)
+	if err != nil {
+		return err
+	}
+	e, err := ei.SetCanonicalBytes(rawjson.Ei)
+	if err != nil {
+		return err
+	}
+	r, err := ri.SetCanonicalBytes(rawjson.Ri)
+	if err != nil {
+		return err
+	}
+	p, err := pi.SetCanonicalBytes(rawjson.Pi)
+	if err != nil {
+		return err
+	}
+	z1, err := zi.SetCanonicalBytes(rawjson.Zi)
+	if err != nil {
+		return err
+	}
+	signer.Public = *pub
+	signer.Pi = *p
+	signer.Zi = *z1
+	signer.Ei = *e
+	signer.Ri = *r
+	signer.Pi = *pi
+	signer.Di = *d
+	return nil
 }

@@ -127,15 +127,15 @@ func (round *Round0) AcceptedMessageTypes() []messages.MessageType {
 }
 
 type Round0JSON struct {
-	Base           []byte               `json:"base"`
-	Messages       []byte               `json:"messages"`
-	Parties        map[party.ID]*signer `json:"parties"`
-	GroupKey       eddsa.PublicKey      `json:"group_key"`
-	SecretKeyShare ristretto.Scalar     `json:"secret_key_share"`
-	E              ristretto.Scalar     `json:"e_scalar"`
-	D              ristretto.Scalar     `json:"d_scalar"`
-	C              ristretto.Scalar     `json:"c_scalar,omitempty"`
-	R              ristretto.Element    `json:"r_scalar,omitempty"`
+	Base           []byte               `json:"base,omitempty"`
+	Messages       []byte               `json:"messages,omitempty"`
+	Parties        map[party.ID]*signer `json:"parties,omitempty"`
+	GroupKey       []byte               `json:"group_key,omitempty"`
+	SecretKeyShare []byte               `json:"secret_key_share,omitempty"`
+	E              []byte               `json:"e_scalar,omitempty"`
+	D              []byte               `json:"d_scalar,omitempty"`
+	C              []byte               `json:"c_scalar,omitempty"`
+	R              []byte               `json:"r_scalar,omitempty"`
 	Output         []byte               `json:"output,omitempty"`
 }
 
@@ -145,19 +145,40 @@ func (round *Round0) MarshalJSON() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	sigData := round.Output.Signature.ToEd25519()
+
+	sec := round.SecretKeyShare.Bytes()
+	e := round.e.Bytes()
+	d := round.d.Bytes()
+	c := round.C.Bytes()
+
+	gk, err := round.GroupKey.MarshalJSON()
+
+	//fmt.Println(round.R.String())
+	//fmt.Println(round.R.BytesEd25519())
+
+	//r, err := round.R.MarshalText()
+	//if err != nil {
+	//	return nil, err
+	//}
+
 	var jsonData = Round0JSON{
-		Base:     baseData,
-		Messages: round.Message,
-		Parties:  round.Parties,
-		GroupKey: round.GroupKey,
-		E:        round.e,
-		D:        round.d,
-		C:        round.C,
-		R:        round.R,
-		Output:   sigData,
+		Base:           baseData,
+		Messages:       round.Message,
+		Parties:        round.Parties,
+		GroupKey:       gk,
+		SecretKeyShare: sec,
+		E:              e,
+		D:              d,
+		C:              c,
+		//R:              r,
 	}
-	return json.Marshal(jsonData)
+	var sigData []byte
+	if round.Output.Signature != nil {
+		sigData = round.Output.Signature.ToEd25519()
+		jsonData.Output = sigData
+	}
+
+	return json.Marshal(&jsonData)
 }
 
 func (round *Round0) UnmarshalJSON(data []byte) error {
@@ -173,21 +194,53 @@ func (round *Round0) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	var gk eddsa.PublicKey
+	err = gk.UnmarshalJSON(rawJson.GroupKey)
+	if err != nil {
+		return err
+	}
+
 	var out Output
 	err = out.Signature.UnmarshalBinary(rawJson.Output)
 	if err != nil {
 		return err
 	}
 
+	var sec = ristretto.NewScalar()
+	sec, err = sec.SetCanonicalBytes(rawJson.SecretKeyShare)
+	if err != nil {
+		return err
+	}
+	var e = ristretto.NewScalar()
+	e, err = e.SetCanonicalBytes(rawJson.E)
+	if err != nil {
+		return err
+	}
+	var d = ristretto.NewScalar()
+	d, err = d.SetCanonicalBytes(rawJson.D)
+	if err != nil {
+		return err
+	}
+	var c = ristretto.NewScalar()
+	c, err = c.SetCanonicalBytes(rawJson.C)
+	if err != nil {
+		return err
+	}
+	//var r ristretto.Element
+	//err = r.UnmarshalText(rawJson.R)
+	//if err != nil {
+	//	return err
+	//}
+
 	round.BaseRound = &base
 	round.Message = rawJson.Messages
 	round.Parties = make(map[party.ID]*signer)
-	round.GroupKey = rawJson.GroupKey
-	round.SecretKeyShare = rawJson.SecretKeyShare
-	round.e = rawJson.E
-	round.d = rawJson.D
-	round.C = rawJson.C
-	round.R = rawJson.R
+	round.GroupKey = gk
+	round.SecretKeyShare = *sec
+	round.e = *e
+	round.d = *d
+	round.C = *c
+	//round.R = r
 	round.Output = &out
 
 	return err

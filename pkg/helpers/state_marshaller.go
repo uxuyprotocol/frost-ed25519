@@ -10,6 +10,8 @@ import (
 	"github.com/taurusgroup/frost-ed25519/pkg/state"
 )
 
+//---------------------- keygen -------------------------------
+
 type FKeyGenOutput struct {
 	Secrets map[party.ID]*eddsa.SecretShare
 	Shares  *eddsa.Public
@@ -31,15 +33,6 @@ type KeyGenOutStateJSON struct {
 	Message1  [][]byte `json:"message1,omitempty"`
 	Message2  [][]byte `json:"message2,omitempty"`
 	StateData []byte   `json:"stateData,omitempty"`
-}
-
-type MPCSignatureOutState struct {
-	PartyID  party.ID
-	State    *state.State
-	Output   *sign.Output
-	GroupKey *eddsa.PublicKey
-	Message1 [][]byte
-	Message2 [][]byte
 }
 
 func UnmarshalKGState(newState *state.State, data []byte) error {
@@ -142,22 +135,87 @@ func UnmarshalKGOutState(s *KeyGenOutState, data []byte) error {
 	return err
 }
 
-//
-//func UnmarshalRound(roundNum int, data []byte)(state.Round, error) {
-//	switch roundNum {
-//	case 1:
-//		var round0 keygen.Round1
-//		err := json.Unmarshal(data, &round0)
-//		return &round0, err
-//	case 2:
-//		var round0 keygen.Round1
-//		err := json.Unmarshal(data, &round0)
-//		return &round0, err
-//
-//}
-
 // ResetKeygenOutputPointee 设置指针...
 func ResetKeygenOutputPointee(state *KeyGenOutState) {
 	o := state.State.GetRound().GetOutput().(*keygen.Output)
 	state.Output = o
+}
+
+//---------------------- signature -------------------------------
+
+type MPCSignatureOutState struct {
+	PartyID  party.ID
+	State    *state.State
+	Output   *sign.Output
+	GroupKey *eddsa.PublicKey
+	Message1 [][]byte
+	Message2 [][]byte
+}
+
+type MPCSignatureOutStateJSON struct {
+	PartyID  uint16   `json:"PartyID,omitempty"`
+	State    []byte   `json:"state,omitempty"`
+	Output   []byte   `json:"output,omitempty"`
+	GroupKey []byte   `json:"groupKey,omitempty"`
+	Message1 [][]byte `json:"message1,omitempty"`
+	Message2 [][]byte `json:"message2,omitempty"`
+}
+
+func (s *MPCSignatureOutState) MarshalJSON() ([]byte, error) {
+
+	pid := uint16(s.PartyID)
+	statedata, err := s.State.MarshalJSON()
+	outdata, err := json.Marshal(s.Output)
+	gkdata, err := s.GroupKey.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	rawjson := MPCSignatureOutStateJSON{
+		PartyID:  pid,
+		State:    statedata,
+		Output:   outdata,
+		GroupKey: gkdata,
+		Message1: s.Message1,
+		Message2: s.Message2,
+	}
+	jsonData, err := json.Marshal(rawjson)
+	if err != nil {
+		return nil, err
+	}
+	return jsonData, nil
+}
+
+func (s *MPCSignatureOutState) UnmarshalJSON(data []byte) error {
+	var jsonData MPCSignatureOutStateJSON
+	err := json.Unmarshal(data, &jsonData)
+	if err != nil {
+		return err
+	}
+	pid := party.ID(jsonData.PartyID)
+	var estate state.State
+	var output sign.Output
+	var groupKey eddsa.PublicKey
+
+	err = estate.UnmarshalJSON(jsonData.State)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(jsonData.Output, &output)
+	if err != nil {
+		return err
+	}
+
+	err = groupKey.UnmarshalJSON(jsonData.GroupKey)
+	if err != nil {
+		return err
+	}
+
+	s.PartyID = pid
+	s.State = &estate
+	s.GroupKey = &groupKey
+	s.Output = &output
+	s.Message1 = jsonData.Message1
+	s.Message2 = jsonData.Message2
+	return nil
 }

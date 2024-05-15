@@ -9,7 +9,8 @@ import (
 	"math/big"
 	"testing"
 
-	"filippo.io/edwards25519/field"
+	//"filippo.io/edwards25519/field"
+	"github.com/WorthyDD/edwards25519/field"
 )
 
 // The encoding of the canonical generator.

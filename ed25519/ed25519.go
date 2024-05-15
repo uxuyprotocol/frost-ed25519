@@ -1,6 +1,6 @@
-package ed25519
+//package ed25519
 
-//package main
+package main
 
 import (
 	"crypto/ed25519"
@@ -952,6 +952,16 @@ func MPCPartSignRound0(n int, index int, key string, message string) (helpers.MP
 		return result, err
 	}
 
+	fmt.Println("round0-------------------------------")
+	statedata, err := json.Marshal(&result)
+	var state2 helpers.MPCSignatureOutState
+	err = json.Unmarshal(statedata, &state2)
+	statedata2, err := json.Marshal(&state2)
+	fmt.Println(statedata)
+	fmt.Println(statedata2)
+
+	fmt.Println("round0 end-------------------------------")
+
 	return result, nil
 }
 
@@ -1380,7 +1390,7 @@ func main() {
 
 	//mpcSigtest()
 
-	dpkTest()
+	//dpkTest()
 
-	//sigtest()
+	sigtest()
 }
