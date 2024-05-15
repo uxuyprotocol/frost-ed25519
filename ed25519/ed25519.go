@@ -1050,6 +1050,24 @@ func VerifySignature(groupKey []byte, message string, signature string) bool {
 	return verify
 }
 
+// GetGroupkeyFromKGOutData 从分片中获取组公钥 GroupKey
+func GetGroupkeyFromKGOutData(slice string) ([]byte, error) {
+
+	sliceData, err := base64.StdEncoding.DecodeString(slice)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	var kg helpers.FKeyGenOutput
+	err = json.Unmarshal(sliceData, &kg)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	return kg.Shares.GroupKey.ToEd25519(), nil
+
+}
+
 // dpkTest 分布式分片生成
 func dpkTest() {
 	// client round0
@@ -1294,6 +1312,15 @@ func sigtest() {
 	serverSlice := "ewogIlNlY3JldHMiOiB7CiAgIjIiOiB7CiAgICJpZCI6IDIsCiAgICJzZWNyZXQiOiAibmc3TTY2OWpabWx5QjF4L05VbUJMRGtNdGkyd2FENFhrRS93WkhSMkJBWT0iCiAgfQogfSwKICJTaGFyZXMiOiB7CiAgInQiOiAxLAogICJncm91cGtleSI6ICJTS0VwaFlFOVdGL0dGUDJRcy8yVWt3TGRFK0VVdjZKRDMyUW5iUTV0aFE0PSIsCiAgInNoYXJlcyI6IHsKICAgIjEiOiAiNk9xNklGOVZHK2RkUUJQY3A2M2M5cWROZGZQTklkMnlRT1l4dUdleGNCTT0iLAogICAiMiI6ICJVb09UNWViYjJRN0w2UEViT1B0MTJtRTNJeE9FVVU4SkpNNkFkTWRPOFJNPSIKICB9CiB9Cn0="
 
 	message := "MessageUXUY_*()&(*^&*(^*^"
+
+	groupK1, err := GetGroupkeyFromKGOutData(clientSlice)
+	groupK2, err := GetGroupkeyFromKGOutData(serverSlice)
+	if err != nil {
+		fmt.Println("kg15...", err)
+		return
+	}
+	fmt.Println("groupK1:", groupK1)
+	fmt.Println("groupK2:", groupK2)
 
 	//client round0
 	cstatedata, err := MPCPartSignRound0(2, 0, clientSlice, message)
