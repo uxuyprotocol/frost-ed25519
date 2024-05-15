@@ -9,12 +9,9 @@ import (
 	"fmt"
 	"github.com/taurusgroup/frost-ed25519/pkg/eddsa"
 	"github.com/taurusgroup/frost-ed25519/pkg/frost"
-	"github.com/taurusgroup/frost-ed25519/pkg/frost/keygen"
 	"github.com/taurusgroup/frost-ed25519/pkg/frost/party"
-	"github.com/taurusgroup/frost-ed25519/pkg/frost/sign"
 	"github.com/taurusgroup/frost-ed25519/pkg/helpers"
 	"github.com/taurusgroup/frost-ed25519/pkg/ristretto"
-	"github.com/taurusgroup/frost-ed25519/pkg/state"
 	"strings"
 )
 
@@ -256,7 +253,7 @@ func Signature(keys string, msg string) string {
 	fmt.Println("merged: ", string(mjson))
 	fmt.Println("error: ", err)
 
-	var kgOutput FKeyGenOutput
+	var kgOutput helpers.FKeyGenOutput
 
 	var jsonData []byte = mjson
 	//jsonData, err = ioutil.ReadFile(filename)
@@ -398,17 +395,17 @@ func VerifySignature(sigvalue string, groupKey string, msg string) bool {
 }
 
 // Key2KGPOutput 还原分片为 kgp
-func Key2KGPOutput(partyId string, key string) (FKeyGenOutput, error) {
+func Key2KGPOutput(partyId string, key string) (helpers.FKeyGenOutput, error) {
 	// MPC 签名
 	slices, err := decode2Bytes(key)
 	if err != nil {
 		fmt.Println(err)
-		return FKeyGenOutput{}, err
+		return helpers.FKeyGenOutput{}, err
 	}
 
 	if slices == nil {
 		fmt.Println("verify failed slices is nil")
-		return FKeyGenOutput{}, fmt.Errorf("verify failed slices is nil")
+		return helpers.FKeyGenOutput{}, fmt.Errorf("verify failed slices is nil")
 	}
 
 	mjson, err := mergeJson(slices)
@@ -422,7 +419,7 @@ func Key2KGPOutput(partyId string, key string) (FKeyGenOutput, error) {
 	//jsonData, err = ioutil.ReadFile(filename)
 	if err != nil {
 		fmt.Println(err)
-		return FKeyGenOutput{}, err
+		return helpers.FKeyGenOutput{}, err
 	}
 
 	fmt.Println("json: --- ", string(mjson), err)
@@ -430,7 +427,7 @@ func Key2KGPOutput(partyId string, key string) (FKeyGenOutput, error) {
 	err = json.Unmarshal(jsonData, &kgOutput)
 	if err != nil {
 		fmt.Println(err)
-		return FKeyGenOutput{}, err
+		return helpers.FKeyGenOutput{}, err
 	}
 
 	// get n and t from the keygen output
@@ -450,7 +447,7 @@ func Key2KGPOutput(partyId string, key string) (FKeyGenOutput, error) {
 		}
 	}
 	if len(partyIDs) == 0 {
-		return FKeyGenOutput{}, fmt.Errorf("party id %s not found", partyId)
+		return helpers.FKeyGenOutput{}, fmt.Errorf("party id %s not found", partyId)
 	}
 	partyID := partyIDs[0]
 
@@ -460,7 +457,7 @@ func Key2KGPOutput(partyId string, key string) (FKeyGenOutput, error) {
 	publicB, err := base64.StdEncoding.DecodeString(publicStr)
 	if err != nil {
 		fmt.Println(err)
-		return FKeyGenOutput{}, err
+		return helpers.FKeyGenOutput{}, err
 	}
 
 	var secret ristretto.Scalar
@@ -469,12 +466,12 @@ func Key2KGPOutput(partyId string, key string) (FKeyGenOutput, error) {
 	_, err = secret.SetCanonicalBytes(secretB)
 	if err != nil {
 		fmt.Println(err)
-		return FKeyGenOutput{}, err
+		return helpers.FKeyGenOutput{}, err
 	}
 	_, err = public.SetCanonicalBytes(publicB)
 	if err != nil {
 		fmt.Println(err)
-		return FKeyGenOutput{}, err
+		return helpers.FKeyGenOutput{}, err
 	}
 
 	secretShare := eddsa.SecretShare{
@@ -502,7 +499,7 @@ func Key2KGPOutput(partyId string, key string) (FKeyGenOutput, error) {
 	//err = json.Unmarshal([]byte(groupKey), &pk)
 	if err != nil {
 		fmt.Printf("groupkey unmarshal err: %v\n", err)
-		return FKeyGenOutput{}, err
+		return helpers.FKeyGenOutput{}, err
 	}
 
 	publicShares := eddsa.Public{
@@ -512,7 +509,7 @@ func Key2KGPOutput(partyId string, key string) (FKeyGenOutput, error) {
 		&groupKey,
 	}
 
-	kgp := FKeyGenOutput{
+	kgp := helpers.FKeyGenOutput{
 		Secrets: secretShares,
 		Shares:  &publicShares,
 	}
@@ -526,7 +523,7 @@ func MPCPartSignV2(n int, keys []string, messageStr string) (string, error) {
 	partyID1 := partyIDs[0]
 	partyID2 := partyIDs[1]
 
-	//var kgp FKeyGenOutput
+	//var kgp helpers.FKeyGenOutput
 	kgp1, err := Key2KGPOutput("1", keys[0])
 	kgp2, err := Key2KGPOutput("2", keys[1])
 	if err != nil {
@@ -677,28 +674,6 @@ func mpcSigtest() {
 }
 */
 
-type FKeyGenOutput struct {
-	Secrets map[party.ID]*eddsa.SecretShare
-	Shares  *eddsa.Public
-}
-
-type KeyGenOutState struct {
-	partyID  party.ID
-	State    *state.State
-	Output   *keygen.Output
-	Message1 [][]byte
-	Message2 [][]byte
-}
-
-type MPCSignatureOutState struct {
-	partyID  party.ID
-	State    *state.State
-	Output   *sign.Output
-	GroupKey *eddsa.PublicKey
-	Message1 [][]byte
-	Message2 [][]byte
-}
-
 func KeygenMsg2String(kMsg [][]byte) string {
 	var result []string
 	for _, msg := range kMsg {
@@ -722,8 +697,9 @@ func KeygenString2Msg(kMsgStr string) [][]byte {
 }
 
 // SliceKeyGenRound0 keygen 阶段1 - 初始化 state
-func SliceKeyGenRound0(n int, partId string, index int) (KeyGenOutState, error) {
+func SliceKeyGenRound0(n int, index int) ([]byte, error) {
 
+	fmt.Println("round0----------------------------------------------")
 	var err error
 
 	partyIDs := helpers.GenerateSet(party.ID(n))
@@ -734,7 +710,7 @@ func SliceKeyGenRound0(n int, partId string, index int) (KeyGenOutState, error) 
 	estate, output, err := frost.NewKeygenState(partyID, partyIDs, party.Size(n-1), 0)
 	if err != nil {
 		fmt.Println(err)
-		return KeyGenOutState{}, err
+		return nil, err
 	}
 
 	msgsOut1 := make([][]byte, 0, n)
@@ -744,52 +720,82 @@ func SliceKeyGenRound0(n int, partId string, index int) (KeyGenOutState, error) 
 	msgs1, err := helpers.PartyRoutine(nil, estate)
 	if err != nil {
 		fmt.Println(err)
-		return KeyGenOutState{}, err
+		return nil, err
 	}
 	msgsOut1 = append(msgsOut1, msgs1...)
 
-	result := KeyGenOutState{
-		partyID:  partyID,
+	result := helpers.KeyGenOutState{
+		PartyID:  partyID,
 		State:    estate,
 		Output:   output,
 		Message1: msgsOut1,
 	}
-	return result, nil
+
+	d, err := helpers.MarshalKGOutState(&result)
+	var result2 helpers.KeyGenOutState
+	err = helpers.UnmarshalKGOutState(&result2, d)
+	//fmt.Println(result, result2)
+
+	fmt.Println("round0 end----------------------------------------------")
+	return d, err
 }
 
 // SliceKeyGenRound1 生成密钥分片 round1
-func SliceKeyGenRound1(index int, outState KeyGenOutState, yMessage string) (KeyGenOutState, error) {
+func SliceKeyGenRound1(index int, outStateData []byte, yMessage string) ([]byte, error) {
 
+	fmt.Println("round1----------------------------------------------")
 	if len(yMessage) == 0 {
-		return outState, fmt.Errorf("remoteMessage is empty")
+		return nil, fmt.Errorf("remoteMessage is empty")
 	}
 
 	yMsg := KeygenString2Msg(yMessage)
+
+	var outState helpers.KeyGenOutState
+	err := helpers.UnmarshalKGOutState(&outState, outStateData)
+	if err != nil {
+		return nil, err
+	}
 
 	if index == 0 {
 		outState.Message1 = append(outState.Message1, yMsg...)
+
 	} else {
 		outState.Message1 = append(yMsg, outState.Message1...)
+
 	}
 
 	msgs2, err := helpers.PartyRoutine(outState.Message1, outState.State)
+	fmt.Println("end part1...", outState.Output.Public, outState.Output.SecretKey)
 	if err != nil {
 		fmt.Println(err)
-		return outState, err
+		return nil, err
 	}
 	outState.Message2 = append(outState.Message2, msgs2...)
 
-	return outState, nil
+	d, err := helpers.MarshalKGOutState(&outState)
+	var result2 helpers.KeyGenOutState
+	err = helpers.UnmarshalKGOutState(&result2, d)
+	//fmt.Println(outState, result2)
+
+	fmt.Println("round1 end----------------------------------------------")
+	return d, err
 }
 
 // SliceKeyGenRound2 生成密钥分片 round2
-func SliceKeyGenRound2(index int, outState KeyGenOutState, yMessage string) (KeyGenOutState, error) {
+func SliceKeyGenRound2(index int, outStateData []byte, yMessage string) ([]byte, error) {
 
+	fmt.Println("round2----------------------------------------------")
 	if len(yMessage) == 0 {
-		return KeyGenOutState{}, fmt.Errorf("remoteMessage is empty")
+		return nil, fmt.Errorf("remoteMessage is empty")
 	}
 
 	yMsg := KeygenString2Msg(yMessage)
+
+	var outState helpers.KeyGenOutState
+	err := helpers.UnmarshalKGOutState(&outState, outStateData)
+	if err != nil {
+		return nil, err
+	}
 
 	if index == 0 {
 		outState.Message2 = append(outState.Message2, yMsg...)
@@ -797,22 +803,47 @@ func SliceKeyGenRound2(index int, outState KeyGenOutState, yMessage string) (Key
 		outState.Message2 = append(yMsg, outState.Message2...)
 	}
 
-	_, err := helpers.PartyRoutine(outState.Message2, outState.State)
+	//if index == 0 {
+	//	outState1.Message2 = append(outState1.Message2, yMsg...)
+	//} else {
+	//	outState1.Message2 = append(yMsg, outState1.Message2...)
+	//}
+
+	//_, err = helpers.PartyRoutine(outState1.Message2, outState1.State)
+	//if err != nil {
+	//	fmt.Println(err)
+	//	return helpers.KeyGenOutState{}, nil, err
+	//}
+
+	helpers.ResetKeygenOutputPointee(&outState)
+
+	_, err = helpers.PartyRoutine(outState.Message2, outState.State)
+	fmt.Println("end part2...", outState.Output.Public, outState.Output.SecretKey)
 	if err != nil {
 		fmt.Println(err)
-		return outState, err
+		//return helpers.KeyGenOutState{}, nil, err
 	}
 
-	return outState, nil
+	stateData2, err := helpers.MarshalKGOutState(&outState)
+	err = helpers.UnmarshalKGOutState(&outState, stateData2)
+
+	fmt.Println("round2 end----------------------------------------------")
+	return stateData2, err
 }
 
 // DKGSlice 生成最终密钥分片分片
-func DKGSlice(n int, outState KeyGenOutState) (string, error) {
+func DKGSlice(n int, outStateData []byte) (string, error) {
+
+	var outState helpers.KeyGenOutState
+	err := helpers.UnmarshalKGOutState(&outState, outStateData)
+	if err != nil {
+		return "", err
+	}
 
 	// Get the public data
 	estate := outState.State
 	output := outState.Output
-	partyID := outState.partyID
+	partyID := outState.PartyID
 	if err := estate.WaitForError(); err != nil {
 		fmt.Println(err)
 		return "", err
@@ -845,7 +876,7 @@ func DKGSlice(n int, outState KeyGenOutState) (string, error) {
 		Shares:  filteredPubs,
 	}
 	var jsonData []byte
-	jsonData, err := json.MarshalIndent(kgOutput, "", " ")
+	jsonData, err = json.MarshalIndent(kgOutput, "", " ")
 	if err != nil {
 		fmt.Println(err)
 		return "", err
@@ -861,7 +892,7 @@ func DKGSlice(n int, outState KeyGenOutState) (string, error) {
 }
 
 // MPCPartSignRound0 MPC 签名第一阶段 生成 state & output
-func MPCPartSignRound0(n int, index int, key string, message string) (MPCSignatureOutState, error) {
+func MPCPartSignRound0(n int, index int, key string, message string) (helpers.MPCSignatureOutState, error) {
 
 	partyIDs := helpers.GenerateSet(party.Size(n))
 
@@ -870,14 +901,14 @@ func MPCPartSignRound0(n int, index int, key string, message string) (MPCSignatu
 	jsonData, err := base64.StdEncoding.DecodeString(key)
 	if err != nil {
 		fmt.Println(err)
-		return MPCSignatureOutState{}, err
+		return helpers.MPCSignatureOutState{}, err
 	}
 
-	var kgp FKeyGenOutput
+	var kgp helpers.FKeyGenOutput
 	err = json.Unmarshal(jsonData, &kgp)
 	if err != nil {
 		fmt.Println(err)
-		return MPCSignatureOutState{}, err
+		return helpers.MPCSignatureOutState{}, err
 	}
 
 	secretShares := kgp.Secrets
@@ -900,13 +931,13 @@ func MPCPartSignRound0(n int, index int, key string, message string) (MPCSignatu
 
 	if err != nil {
 		fmt.Println(err)
-		return MPCSignatureOutState{}, err
+		return helpers.MPCSignatureOutState{}, err
 	}
 
 	msgsOut1 := make([][]byte, 0, n)
 	msgsOut2 := make([][]byte, 0, n)
-	result := MPCSignatureOutState{
-		partyID:  partyID,
+	result := helpers.MPCSignatureOutState{
+		PartyID:  partyID,
 		State:    estate,
 		Output:   output,
 		GroupKey: publicShares.GroupKey,
@@ -924,7 +955,7 @@ func MPCPartSignRound0(n int, index int, key string, message string) (MPCSignatu
 	return result, nil
 }
 
-func MPCPartSignRound1(index int, inputState MPCSignatureOutState, yMessage string) (MPCSignatureOutState, error) {
+func MPCPartSignRound1(index int, inputState helpers.MPCSignatureOutState, yMessage string) (helpers.MPCSignatureOutState, error) {
 
 	estate := inputState.State
 
@@ -950,7 +981,7 @@ func MPCPartSignRound1(index int, inputState MPCSignatureOutState, yMessage stri
 	return inputState, nil
 }
 
-func MPCPartSignRound2(index int, inputState MPCSignatureOutState, yMessage string, message string) (string, error) {
+func MPCPartSignRound2(index int, inputState helpers.MPCSignatureOutState, yMessage string, message string) (string, error) {
 
 	estate := inputState.State
 
@@ -998,78 +1029,237 @@ func VerifySignature(groupKey *eddsa.PublicKey, message string, signature string
 // dpkTest 分布式分片生成
 func dpkTest() {
 	// client round0
-	cstate, err := SliceKeyGenRound0(2, "1", 0)
+	cstateData, err := SliceKeyGenRound0(2, 0)
 	if err != nil {
 		fmt.Println("kg1...", err)
 		return
 	}
 
-	//编码解码测试
-	s1, err := json.Marshal(cstate)
-	if err != nil {
-		fmt.Println("kg2...", err)
-	}
-	var s11 KeyGenOutState
-	err = json.Unmarshal(s1, &s11)
-	if err != nil {
-		fmt.Println("kg3...", err)
-	}
-	fmt.Println(s11)
-
 	// server round0
-	sstate, err := SliceKeyGenRound0(2, "2", 1)
+	sstateData, err := SliceKeyGenRound0(2, 1)
 	if err != nil {
 		fmt.Println("kg2...", err)
 		return
 	}
 
-	// client round1
-	smsg1 := KeygenMsg2String(sstate.Message1)
-	cstate, err = SliceKeyGenRound1(0, cstate, smsg1)
+	var cstate2 helpers.KeyGenOutState
+	var sstate2 helpers.KeyGenOutState
+
+	err = helpers.UnmarshalKGOutState(&cstate2, cstateData)
 	if err != nil {
 		fmt.Println("kg3...", err)
 		return
 	}
-
-	// server round1
-	cmsg1 := KeygenMsg2String(cstate.Message1)
-	sstate, err = SliceKeyGenRound1(1, sstate, cmsg1)
+	err = helpers.UnmarshalKGOutState(&sstate2, sstateData)
 	if err != nil {
 		fmt.Println("kg4...", err)
 		return
 	}
 
-	// client round2
-	smsg1 = KeygenMsg2String(sstate.Message2)
-	cstate, err = SliceKeyGenRound2(0, cstate, smsg1)
-	if err != nil {
-		fmt.Println("kg5...", err)
-		return
-	}
+	fmt.Println("--------------------test begin-----------------------------")
 
-	// server round2
-	cmsg1 = KeygenMsg2String(cstate.Message2)
-	sstate, err = SliceKeyGenRound2(1, sstate, cmsg1)
+	//statedata1, err := cstate2.State.MarshalJSON()
+	//statedata3, err := json.Marshal(cstate2.State)
+	//var cstate3 state.State
+	////err = json.Unmarshal(statedata1, &cstate3)
+	//err = cstate3.UnmarshalJSON(statedata1)
+	//statedata2, err := cstate3.MarshalJSON()
+	//fmt.Println("woods002: ")
+	//fmt.Println(statedata1)
+	//fmt.Println(statedata3)
+	//fmt.Println(statedata2)
+	//fmt.Println("----------------")
+
+	cstateData2, err := helpers.MarshalKGOutState(&cstate2)
+	var cstate3 helpers.KeyGenOutState
+	err = helpers.UnmarshalKGOutState(&cstate3, cstateData2)
+	statedata2, err := json.Marshal(cstate2.State)
+	statedata3, err := json.Marshal(cstate3.State)
+	var cstate4 helpers.KeyGenOutState
+	cstatedata3, err := helpers.MarshalKGOutState(&cstate3)
+	err = helpers.UnmarshalKGOutState(&cstate4, cstatedata3)
+	statedata4, err := json.Marshal(cstate4.State)
+
+	//odata1, err := json.Marshal(cstate2.Output)
+	//odata2, err := json.Marshal(cstate3.Output)
+	//odata3, err := json.Marshal(cstate4.Output)
+
+	//rdata1, err := json.Marshal(cstate2.State.GetRound())
+	//rdata2, err := json.Marshal(cstate3.State.GetRound())
+	//rdata3, err := json.Marshal(cstate4.State.GetRound())
+	//rdata4, err := json.Marshal(cstate4.State.GetRound())
+	//
+	//fmt.Println("woods2:------------------")
+	fmt.Println(len(statedata2), len(statedata3), len(statedata4))
+	fmt.Println(statedata2)
+	fmt.Println(statedata3)
+	fmt.Println(statedata4)
+	//fmt.Println(odata1)
+	//fmt.Println(odata2)
+	//fmt.Println(odata3)
+	//fmt.Println(len(rdata1), len(rdata2), len(rdata3), len(rdata4))
+	//fmt.Println(rdata1)
+	//fmt.Println(rdata2)
+	//fmt.Println(rdata3)
+	//fmt.Println(rdata4)
+	//fmt.Println("-------------------------")
+
+	smsg1 := KeygenMsg2String(sstate2.Message1)
+
+	cstateData, err = SliceKeyGenRound1(0, cstateData, smsg1)
 	if err != nil {
 		fmt.Println("kg6...", err)
 		return
 	}
 
-	// client gen slice
-	cslice, err := DKGSlice(2, cstate)
+	err = helpers.UnmarshalKGOutState(&cstate2, cstateData)
 	if err != nil {
 		fmt.Println("kg7...", err)
+		return
+	}
+
+	// server round1
+	cmsg1 := KeygenMsg2String(cstate2.Message1)
+
+	sstateData, err = SliceKeyGenRound1(1, sstateData, cmsg1)
+	if err != nil {
+		fmt.Println("kg9...", err)
+		return
+	}
+
+	err = helpers.UnmarshalKGOutState(&sstate2, sstateData)
+	if err != nil {
+		fmt.Println("kg10...", err)
+		return
+	}
+	err = helpers.UnmarshalKGOutState(&cstate2, cstateData)
+	if err != nil {
+		fmt.Println("kg11...", err)
+		return
+	}
+
+	//err = helpers.UnmarshalKGOutState(&cstate1, cstate)
+	//err = helpers.UnmarshalKGOutState(&sstate1, sstate)
+
+	//err = json.Unmarshal(cstate, &cstate1)
+	//err = json.Unmarshal(sstate, &sstate1)
+	//if err != nil {
+	//	fmt.Println("kg4...", err)
+	//	return
+	//}
+
+	// client round2
+
+	//cstateData, err = helpers.MarshalKGOutState(&cstate)
+	//sstateData, err = helpers.MarshalKGOutState(&sstate)
+	//if err != nil {
+	//	fmt.Println("kg5...", err)
+	//	return
+	//}
+
+	smsg1 = KeygenMsg2String(sstate2.Message2)
+
+	cstateData, err = SliceKeyGenRound2(0, cstateData, smsg1)
+	if err != nil {
+		fmt.Println("kg13...", err)
+		return
+	}
+
+	err = helpers.UnmarshalKGOutState(&cstate2, cstateData)
+	if err != nil {
+		fmt.Println("kg14...", err)
+		return
+	}
+
+	// server round2
+	cmsg1 = KeygenMsg2String(cstate2.Message2)
+	sstateData, err = SliceKeyGenRound2(1, sstateData, cmsg1)
+	if err != nil {
+		fmt.Println("kg16...", err)
+		return
+	}
+
+	// client gen slice
+	cslice, err := DKGSlice(2, cstateData)
+	if err != nil {
+		fmt.Println("kg17...", err)
 		return
 	}
 	fmt.Println("client slice: ", cslice)
 
 	// client gen slice
-	sslice, err := DKGSlice(2, sstate)
+	sslice, err := DKGSlice(2, sstateData)
 	if err != nil {
-		fmt.Println("kg8...", err)
+		fmt.Println("kg18...", err)
 		return
 	}
 	fmt.Println("server slice: ", sslice)
+	//end
+
+	//// client round1
+	//smsg1 := KeygenMsg2String(sstate1.Message1)
+	//cstate, err = SliceKeyGenRound1(0, cstate, smsg1)
+	//if err != nil {
+	//	fmt.Println("kg3...", err)
+	//	return
+	//}
+	//
+	//// server round1
+	//cmsg1 := KeygenMsg2String(cstate1.Message1)
+	//sstate, err = SliceKeyGenRound1(1, sstate, cmsg1)
+	//if err != nil {
+	//	fmt.Println("kg4...", err)
+	//	return
+	//}
+
+	//err = helpers.UnmarshalKGOutState(&cstate1, cstate)
+	//err = helpers.UnmarshalKGOutState(&sstate1, sstate)
+	//
+	////err = json.Unmarshal(cstate, &cstate1)
+	////err = json.Unmarshal(sstate, &sstate1)
+	//if err != nil {
+	//	fmt.Println("kg4...", err)
+	//	return
+	//}
+	//
+	//// client round2
+	//smsg1 = KeygenMsg2String(sstate1.Message2)
+	//cstate, err = SliceKeyGenRound2(0, cstate, smsg1)
+	//if err != nil {
+	//	fmt.Println("kg5...", err)
+	//	return
+	//}
+	//
+	//// server round2
+	//cmsg1 = KeygenMsg2String(cstate1.Message2)
+	//sstate, err = SliceKeyGenRound2(1, sstate, cmsg1)
+	//if err != nil {
+	//	fmt.Println("kg6...", err)
+	//	return
+	//}
+	//
+	//err = json.Unmarshal(cstate, &cstate1)
+	//err = json.Unmarshal(sstate, &sstate1)
+	//if err != nil {
+	//	fmt.Println("kg4...", err)
+	//	return
+	//}
+	//
+	//// client gen slice
+	//cslice, err := DKGSlice(2, cstate1)
+	//if err != nil {
+	//	fmt.Println("kg7...", err)
+	//	return
+	//}
+	//fmt.Println("client slice: ", cslice)
+	//
+	//// client gen slice
+	//sslice, err := DKGSlice(2, sstate1)
+	//if err != nil {
+	//	fmt.Println("kg8...", err)
+	//	return
+	//}
+	//fmt.Println("server slice: ", sslice)
 
 }
 

@@ -2,6 +2,7 @@ package keygen
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/taurusgroup/frost-ed25519/pkg/eddsa"
 	"github.com/taurusgroup/frost-ed25519/pkg/frost/party"
@@ -10,13 +11,14 @@ import (
 	"github.com/taurusgroup/frost-ed25519/pkg/state"
 )
 
-func (round *round2) ProcessMessage(msg *messages.Message) *state.Error {
+func (round *Round2) ProcessMessage(msg *messages.Message) *state.Error {
 	var computedShareExp ristretto.Element
 	computedShareExp.ScalarBaseMult(&msg.KeyGen2.Share)
 
 	id := msg.From
 	shareExp := round.Commitments[id].Evaluate(round.SelfID().Scalar())
 
+	fmt.Println("round2ProcessMessage...", id, msg.KeyGen2.Share, round.Commitments[id], round.SelfID())
 	if computedShareExp.Equal(shareExp) != 1 {
 		return state.NewError(id, errors.New("VSS failed to validate"))
 	}
@@ -28,7 +30,7 @@ func (round *round2) ProcessMessage(msg *messages.Message) *state.Error {
 	return nil
 }
 
-func (round *round2) GenerateMessages() ([]*messages.Message, *state.Error) {
+func (round *Round2) GenerateMessages() ([]*messages.Message, *state.Error) {
 	shares := make(map[party.ID]*ristretto.Element, round.PartyIDs().N())
 	for _, id := range round.PartyIDs() {
 		shares[id] = round.CommitmentsSum.Evaluate(id.Scalar())
@@ -43,10 +45,14 @@ func (round *round2) GenerateMessages() ([]*messages.Message, *state.Error) {
 	return nil, nil
 }
 
-func (round *round2) NextRound() state.Round {
+func (round *Round2) NextRound() state.Round {
 	return nil
 }
 
-func (round *round2) MessageType() messages.MessageType {
+func (round *Round2) MessageType() messages.MessageType {
 	return messages.MessageTypeKeyGen2
+}
+
+func (round *Round2) GetOutput() interface{} {
+	return round.Output
 }
