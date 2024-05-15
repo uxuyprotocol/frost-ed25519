@@ -156,10 +156,7 @@ func (round *Round0) MarshalJSON() ([]byte, error) {
 	//fmt.Println(round.R.String())
 	//fmt.Println(round.R.BytesEd25519())
 
-	//r, err := round.R.MarshalText()
-	//if err != nil {
-	//	return nil, err
-	//}
+	r := round.R.Bytes()
 
 	var jsonData = Round0JSON{
 		Base:           baseData,
@@ -170,15 +167,20 @@ func (round *Round0) MarshalJSON() ([]byte, error) {
 		E:              e,
 		D:              d,
 		C:              c,
-		//R:              r,
+		R:              r,
 	}
 	var sigData []byte
 	if round.Output.Signature != nil {
 		sigData = round.Output.Signature.ToEd25519()
 		jsonData.Output = sigData
 	}
+	data, err := json.Marshal(jsonData)
 
-	return json.Marshal(&jsonData)
+	fmt.Println("mar--------------------------")
+	fmt.Println(round.SelfID(), len(baseData), len(round.Message), len(round.Parties), len(gk), len(sec), len(e), len(d), len(c), len(r), len(data))
+	fmt.Println("mar end--------------------------")
+
+	return data, err
 }
 
 func (round *Round0) UnmarshalJSON(data []byte) error {
@@ -201,9 +203,11 @@ func (round *Round0) UnmarshalJSON(data []byte) error {
 	}
 
 	var out Output
-	err = out.Signature.UnmarshalBinary(rawJson.Output)
-	if err != nil {
-		return err
+	if rawJson.Output != nil {
+		err = out.Signature.UnmarshalBinary(rawJson.Output)
+		if err != nil {
+			return err
+		}
 	}
 
 	var sec = ristretto.NewScalar()
@@ -226,21 +230,21 @@ func (round *Round0) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	//var r ristretto.Element
-	//err = r.UnmarshalText(rawJson.R)
-	//if err != nil {
-	//	return err
-	//}
+	var r = ristretto.NewIdentityElement()
+	r, err = r.SetCanonicalBytes(rawJson.R)
+	if err != nil {
+		return err
+	}
 
 	round.BaseRound = &base
 	round.Message = rawJson.Messages
-	round.Parties = make(map[party.ID]*signer)
+	round.Parties = rawJson.Parties
 	round.GroupKey = gk
 	round.SecretKeyShare = *sec
 	round.e = *e
 	round.d = *d
 	round.C = *c
-	//round.R = r
+	round.R = *r
 	round.Output = &out
 
 	return err

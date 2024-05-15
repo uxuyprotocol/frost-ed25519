@@ -61,7 +61,7 @@ func (signer *signer) MarshalJSON() ([]byte, error) {
 	//rInital := signer.Ri.PointInited()
 
 	b1 := signer.Ri.Bytes()
-	fmt.Println(len(b1), b1)
+	fmt.Println(len(b1), b1, signer.Ri.CheckPointInited())
 
 	rawjson := signerJSON{
 		Public: signer.Public.Bytes(),

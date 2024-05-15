@@ -136,7 +136,7 @@ func (round *Round0) MarshalJSON() ([]byte, error) {
 		commitmentsData,
 		round.Output,
 	}
-	result, err := json.Marshal(&rawJson)
+	result, err := json.Marshal(rawJson)
 
 	//fmt.Println("r2----------------------------")
 	//
@@ -167,7 +167,7 @@ func (round *Round0) MarshalJSON() ([]byte, error) {
 }
 
 func (round *Round0) UnmarshalJSON(data []byte) error {
-	var rawJson Round0JSON
+	var rawJson = Round0JSON{}
 	err := json.Unmarshal(data, &rawJson)
 	if err != nil {
 		return err

@@ -17,7 +17,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"github.com/WorthyDD/edwards25519"
-	"github.com/WorthyDD/edwards25519/filed"
+	"github.com/WorthyDD/edwards25519/field"
 )
 
 type Scalar = edwards25519.Scalar
@@ -211,6 +211,10 @@ func (e *Element) Bytes() []byte {
 	// Bytes is outlined to let the allocation happen on the stack of the caller.
 
 	b := make([]byte, 32)
+
+	if !e.CheckPointInited() {
+		return b
+	}
 
 	return e.bytes(b)
 }
@@ -465,20 +469,6 @@ func (e *Element) BytesEd25519() []byte {
 }
 
 // PointInited 通过协程捕获 panic 检查是否初始化
-func (e *Element) PointInited() bool {
-	result := true
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer func() {
-			wg.Done()
-			if r := recover(); r != nil {
-				result = false
-			}
-		}()
-		e.Bytes()
-	}()
-	wg.Wait()
-	return result
+func (e *Element) CheckPointInited() bool {
+	return e.r.CheckInitialized()
 }

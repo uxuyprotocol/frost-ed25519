@@ -303,6 +303,10 @@ func (s *State) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 
+	//fmt.Println("mar--------------------------")
+	//fmt.Println(s.roundNumber, len(s.acceptedTypes), len(recContainer), len(roundData), len(queueContainer))
+	//fmt.Println("mar end--------------------------")
+
 	return json.Marshal(stateJSON{
 		AcceptedTypes:    s.acceptedTypes,
 		ReceivedMessages: recContainer,

@@ -892,7 +892,7 @@ func DKGSlice(n int, outStateData []byte) (string, error) {
 }
 
 // MPCPartSignRound0 MPC 签名第一阶段 生成 state & output
-func MPCPartSignRound0(n int, index int, key string, message string) (helpers.MPCSignatureOutState, error) {
+func MPCPartSignRound0(n int, index int, key string, message string) ([]byte, error) {
 
 	partyIDs := helpers.GenerateSet(party.Size(n))
 
@@ -901,14 +901,14 @@ func MPCPartSignRound0(n int, index int, key string, message string) (helpers.MP
 	jsonData, err := base64.StdEncoding.DecodeString(key)
 	if err != nil {
 		fmt.Println(err)
-		return helpers.MPCSignatureOutState{}, err
+		return nil, err
 	}
 
 	var kgp helpers.FKeyGenOutput
 	err = json.Unmarshal(jsonData, &kgp)
 	if err != nil {
 		fmt.Println(err)
-		return helpers.MPCSignatureOutState{}, err
+		return nil, err
 	}
 
 	secretShares := kgp.Secrets
@@ -931,7 +931,7 @@ func MPCPartSignRound0(n int, index int, key string, message string) (helpers.MP
 
 	if err != nil {
 		fmt.Println(err)
-		return helpers.MPCSignatureOutState{}, err
+		return nil, err
 	}
 
 	msgsOut1 := make([][]byte, 0, n)
@@ -949,28 +949,33 @@ func MPCPartSignRound0(n int, index int, key string, message string) (helpers.MP
 	result.Message1 = msgs
 	if err != nil {
 		fmt.Println(err)
-		return result, err
+		return nil, err
 	}
 
-	fmt.Println("round0-------------------------------")
+	//fmt.Println("round0-------------------------------")
 	statedata, err := json.Marshal(&result)
-	var state2 helpers.MPCSignatureOutState
-	err = json.Unmarshal(statedata, &state2)
-	statedata2, err := json.Marshal(&state2)
-	fmt.Println(statedata)
-	fmt.Println(statedata2)
+	//var state2 helpers.MPCSignatureOutState
+	//err = json.Unmarshal(statedata, &state2)
+	//statedata2, err := json.Marshal(&state2)
+	//fmt.Println(statedata)
+	//fmt.Println(statedata2)
 
-	fmt.Println("round0 end-------------------------------")
+	//fmt.Println("round0 end-------------------------------")
 
-	return result, nil
+	return statedata, err
 }
 
-func MPCPartSignRound1(index int, inputState helpers.MPCSignatureOutState, yMessage string) (helpers.MPCSignatureOutState, error) {
+func MPCPartSignRound1(index int, inputStateData []byte, yMessage string) ([]byte, error) {
 
+	var inputState helpers.MPCSignatureOutState
+	err := json.Unmarshal(inputStateData, &inputState)
+	if err != nil {
+		return nil, err
+	}
 	estate := inputState.State
 
 	if len(yMessage) == 0 {
-		return inputState, fmt.Errorf("remoteMessage is empty")
+		return nil, fmt.Errorf("remoteMessage is empty")
 	}
 
 	yMsg := KeygenString2Msg(yMessage)
@@ -984,14 +989,22 @@ func MPCPartSignRound1(index int, inputState helpers.MPCSignatureOutState, yMess
 	msgs, err := helpers.PartyRoutine(inputState.Message1, estate)
 	if err != nil {
 		fmt.Println(err)
-		return inputState, err
+		return nil, err
 	}
 
 	inputState.Message2 = msgs
-	return inputState, nil
+	data, err := json.Marshal(&inputState)
+
+	return data, err
 }
 
-func MPCPartSignRound2(index int, inputState helpers.MPCSignatureOutState, yMessage string, message string) (string, error) {
+func MPCPartSignRound2(index int, inputStateData []byte, yMessage string, message string) (string, error) {
+
+	var inputState helpers.MPCSignatureOutState
+	err := json.Unmarshal(inputStateData, &inputState)
+	if err != nil {
+		return "", err
+	}
 
 	estate := inputState.State
 
@@ -1007,7 +1020,8 @@ func MPCPartSignRound2(index int, inputState helpers.MPCSignatureOutState, yMess
 		inputState.Message2 = append(yMsg, inputState.Message2...)
 	}
 
-	_, err := helpers.PartyRoutine(inputState.Message2, estate)
+	helpers.ResetSignOutputPointee(&inputState)
+	_, err = helpers.PartyRoutine(inputState.Message2, estate)
 	if err != nil {
 		fmt.Println(err)
 		return "", err
@@ -1025,14 +1039,14 @@ func MPCPartSignRound2(index int, inputState helpers.MPCSignatureOutState, yMess
 	return sigResult, nil
 }
 
-func VerifySignature(groupKey *eddsa.PublicKey, message string, signature string) bool {
+func VerifySignature(groupKey []byte, message string, signature string) bool {
 
 	sig, err := base64.StdEncoding.DecodeString(signature)
 	if err != nil {
 		fmt.Println(err)
 		return false
 	}
-	verify := ed25519.Verify(groupKey.ToEd25519(), []byte(message), sig)
+	verify := ed25519.Verify(groupKey, []byte(message), sig)
 	return verify
 }
 
@@ -1282,22 +1296,56 @@ func sigtest() {
 	message := "MessageUXUY_*()&(*^&*(^*^"
 
 	//client round0
-	cstate, err := MPCPartSignRound0(2, 0, clientSlice, message)
+	cstatedata, err := MPCPartSignRound0(2, 0, clientSlice, message)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
 	//server round0
-	sstate, err := MPCPartSignRound0(2, 1, serverSlice, message)
+	sstatedata, err := MPCPartSignRound0(2, 1, serverSlice, message)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
+	var cstate helpers.MPCSignatureOutState
+	var sstate helpers.MPCSignatureOutState
+
+	err = json.Unmarshal(cstatedata, &cstate)
+	err = json.Unmarshal(sstatedata, &sstate)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	//fmt.Println("round0 ------------------------------")
+	//
+	//cstatedata2, err := json.Marshal(&cstate)
+	//var cstate2 helpers.MPCSignatureOutState
+	//err = json.Unmarshal(cstatedata2, &cstate2)
+	//if err != nil {
+	//	fmt.Println(err)
+	//	return
+	//}
+	//cstatedata3, err := json.Marshal(&cstate2)
+	//
+	//fmt.Println(len(cstatedata), len(cstatedata2), len(cstatedata3))
+	//fmt.Println(cstatedata)
+	//fmt.Println(cstatedata2)
+	//fmt.Println(cstatedata3)
+	//
+	//fmt.Println("round0 end ------------------------------")
+
 	//client round1
 	smsg1 := KeygenMsg2String(sstate.Message1)
-	cstate, err = MPCPartSignRound1(0, cstate, smsg1)
+	cstatedata, err = MPCPartSignRound1(0, cstatedata, smsg1)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	err = json.Unmarshal(cstatedata, &cstate)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -1305,7 +1353,13 @@ func sigtest() {
 
 	//server round1
 	cmsg1 := KeygenMsg2String(cstate.Message1)
-	sstate, err = MPCPartSignRound1(1, sstate, cmsg1)
+	sstatedata, err = MPCPartSignRound1(1, sstatedata, cmsg1)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	err = json.Unmarshal(sstatedata, &sstate)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -1313,7 +1367,7 @@ func sigtest() {
 
 	//client round2
 	smsg2 := KeygenMsg2String(sstate.Message2)
-	sig1, err := MPCPartSignRound2(0, cstate, smsg2, message)
+	sig1, err := MPCPartSignRound2(0, cstatedata, smsg2, message)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -1321,7 +1375,7 @@ func sigtest() {
 
 	//server round1
 	cmsg2 := KeygenMsg2String(cstate.Message2)
-	sig2, err := MPCPartSignRound2(1, sstate, cmsg2, message)
+	sig2, err := MPCPartSignRound2(1, sstatedata, cmsg2, message)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -1339,8 +1393,8 @@ func sigtest() {
 	//verify1 := ed25519.Verify(cgk.ToEd25519(), []byte(message), sigE1)
 	//verify2 := ed25519.Verify(sgk.ToEd25519(), []byte(message), sigE2)
 
-	verify1 := VerifySignature(cgk, message, sig1)
-	verify2 := VerifySignature(sgk, message, sig2)
+	verify1 := VerifySignature(cgk.ToEd25519(), message, sig1)
+	verify2 := VerifySignature(sgk.ToEd25519(), message, sig2)
 
 	fmt.Println("verify1: ", verify1)
 	fmt.Println("verify2: ", verify2)

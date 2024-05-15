@@ -182,6 +182,11 @@ func (s *MPCSignatureOutState) MarshalJSON() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	//fmt.Println("mar--------------------------")
+	//fmt.Println(pid, len(statedata), len(outdata), len(gkdata), len(s.Message1), len(s.Message2))
+	//fmt.Println("mar end--------------------------")
+
 	return jsonData, nil
 }
 
@@ -211,6 +216,12 @@ func (s *MPCSignatureOutState) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	round, err := UnmarshalSignRound(estate.RoundData, estate.GetRoundNumber())
+	if err != nil {
+		return err
+	}
+	estate.SetRound(round)
+
 	s.PartyID = pid
 	s.State = &estate
 	s.GroupKey = &groupKey
@@ -218,4 +229,34 @@ func (s *MPCSignatureOutState) UnmarshalJSON(data []byte) error {
 	s.Message1 = jsonData.Message1
 	s.Message2 = jsonData.Message2
 	return nil
+}
+
+func UnmarshalSignRound(roundData []byte, roundNum int) (state.Round, error) {
+	switch roundNum {
+	case 1:
+		var round0 sign.Round1
+		err := json.Unmarshal(roundData, &round0)
+		if err != nil {
+			fmt.Println(err)
+			return nil, err
+		}
+
+		return &round0, nil
+	case 2:
+		var round0 sign.Round2
+		err := json.Unmarshal(roundData, &round0)
+		if err != nil {
+			fmt.Println(err)
+			return nil, err
+		}
+
+		return &round0, nil
+	}
+	return nil, fmt.Errorf("unknown round number: %d", roundNum)
+}
+
+// ResetSignOutputPointee 设置指针...
+func ResetSignOutputPointee(state *MPCSignatureOutState) {
+	o := state.State.GetRound().GetOutput().(*sign.Output)
+	state.Output = o
 }
