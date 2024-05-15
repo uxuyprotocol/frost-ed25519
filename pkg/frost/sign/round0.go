@@ -6,11 +6,11 @@ import (
 	"github.com/taurusgroup/frost-ed25519/pkg/state"
 )
 
-func (round *round0) ProcessMessage(*messages.Message) *state.Error {
+func (round *Round0) ProcessMessage(*messages.Message) *state.Error {
 	return nil
 }
 
-func (round *round0) GenerateMessages() ([]*messages.Message, *state.Error) {
+func (round *Round0) GenerateMessages() ([]*messages.Message, *state.Error) {
 	selfParty := round.Parties[round.SelfID()]
 
 	// Sample dᵢ, Dᵢ = [dᵢ] B
@@ -26,10 +26,10 @@ func (round *round0) GenerateMessages() ([]*messages.Message, *state.Error) {
 	return []*messages.Message{msg}, nil
 }
 
-func (round *round0) NextRound() state.Round {
-	return &round1{round}
+func (round *Round0) NextRound() state.Round {
+	return &Round1{round}
 }
 
-func (round *round0) GetOutput() interface{} {
+func (round *Round0) GetOutput() interface{} {
 	return round.Output
 }

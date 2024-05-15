@@ -13,7 +13,7 @@ import (
 
 var hashDomainSeparation = []byte("FROST-SHA512")
 
-func (round *round1) ProcessMessage(msg *messages.Message) *state.Error {
+func (round *Round1) ProcessMessage(msg *messages.Message) *state.Error {
 	id := msg.From
 	otherParty := round.Parties[id]
 	identity := ristretto.NewIdentityElement()
@@ -25,7 +25,7 @@ func (round *round1) ProcessMessage(msg *messages.Message) *state.Error {
 	return nil
 }
 
-func (round *round1) computeRhos() {
+func (round *Round1) computeRhos() {
 	/*
 		While profiling, we noticed that using hash.Hash forces all values to be allocated on the heap.
 		To prevent this, we can simply create a big buffer on the stack and call sha512.Sum().
@@ -74,7 +74,7 @@ func (round *round1) computeRhos() {
 	}
 }
 
-func (round *round1) GenerateMessages() ([]*messages.Message, *state.Error) {
+func (round *Round1) GenerateMessages() ([]*messages.Message, *state.Error) {
 	round.computeRhos()
 
 	round.R.Set(ristretto.NewIdentityElement())
@@ -106,10 +106,10 @@ func (round *round1) GenerateMessages() ([]*messages.Message, *state.Error) {
 	return []*messages.Message{msg}, nil
 }
 
-func (round *round1) NextRound() state.Round {
-	return &round2{round}
+func (round *Round1) NextRound() state.Round {
+	return &Round2{round}
 }
 
-func (round *round1) GetOutput() interface{} {
+func (round *Round1) GetOutput() interface{} {
 	return round.Output
 }
