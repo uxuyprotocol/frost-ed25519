@@ -53,6 +53,9 @@ func (o *Output) UnmarshalJSON(data []byte) error {
 
 	var secret = new(eddsa.SecretShare)
 	err = secret.UnmarshalJSON(jsonData.Secret)
+
+	o.Public = pub
+	o.SecretKey = secret
 	return err
 
 }

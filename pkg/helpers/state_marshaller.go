@@ -24,6 +24,15 @@ type KeyGenOutState struct {
 	StateData []byte
 }
 
+type KeyGenOutStateJSON struct {
+	PartyID   party.ID `json:"partyID"`
+	State     []byte   `json:"state,omitempty"`
+	Output    []byte   `json:"output,omitempty"`
+	Message1  [][]byte `json:"message1,omitempty"`
+	Message2  [][]byte `json:"message2,omitempty"`
+	StateData []byte   `json:"stateData,omitempty"`
+}
+
 type MPCSignatureOutState struct {
 	PartyID  party.ID
 	State    *state.State
@@ -88,26 +97,64 @@ func MarshalKGOutState(s *KeyGenOutState) ([]byte, error) {
 		return nil, err
 	}
 	s.StateData = sdata
-	return json.Marshal(s)
+
+	opdata, err := s.Output.MarshalJSON()
+	var jsonData = KeyGenOutStateJSON{
+		PartyID:   s.PartyID,
+		State:     sdata,
+		Output:    opdata,
+		Message1:  s.Message1,
+		Message2:  s.Message2,
+		StateData: sdata,
+	}
+
+	return json.Marshal(jsonData)
 }
 
 func UnmarshalKGOutState(s *KeyGenOutState, data []byte) error {
 
-	err := json.Unmarshal(data, s)
+	var jsonData KeyGenOutStateJSON
+	err := json.Unmarshal(data, &jsonData)
 	if err != nil {
 		return err
 	}
-	err = UnmarshalKGState(s.State, s.StateData)
-	//
-	//round := s.State.GetRound()
-	//nstate, err := state.NewBaseState(round, 0)
-	//if err != nil {
-	//	return err
-	//}
-	//s.State = nstate
+
+	var estate state.State
+	err = UnmarshalKGState(&estate, jsonData.StateData)
+	if err != nil {
+		return err
+	}
+
+	s.State = &estate
+
+	fmt.Println("out.....", len(jsonData.Output))
+	if s.Output == nil || len(jsonData.Output) > 100 {
+		var output keygen.Output
+		err = output.UnmarshalJSON(jsonData.Output)
+		s.Output = &output
+	}
+
+	s.Message1 = jsonData.Message1
+	s.Message2 = jsonData.Message2
+	s.StateData = jsonData.StateData
+	s.PartyID = jsonData.PartyID
 
 	return err
 }
+
+//
+//func UnmarshalRound(roundNum int, data []byte)(state.Round, error) {
+//	switch roundNum {
+//	case 1:
+//		var round0 keygen.Round1
+//		err := json.Unmarshal(data, &round0)
+//		return &round0, err
+//	case 2:
+//		var round0 keygen.Round1
+//		err := json.Unmarshal(data, &round0)
+//		return &round0, err
+//
+//}
 
 // ResetKeygenOutputPointee 设置指针...
 func ResetKeygenOutputPointee(state *KeyGenOutState) {
