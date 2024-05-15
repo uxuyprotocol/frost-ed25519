@@ -1,6 +1,6 @@
-//package ed25519
+package ed25519
 
-package main
+//package main
 
 import (
 	"crypto/ed25519"
@@ -832,10 +832,10 @@ func SliceKeyGenRound2(index int, outStateData []byte, yMessage string) ([]byte,
 }
 
 // DKGSlice 生成最终密钥分片分片
-func DKGSlice(n int, oustateData []byte) (string, error) {
+func DKGSlice(n int, outStateData []byte) (string, error) {
 
 	var outState helpers.KeyGenOutState
-	err := helpers.UnmarshalKGOutState(&outState, oustateData)
+	err := helpers.UnmarshalKGOutState(&outState, outStateData)
 	if err != nil {
 		return "", err
 	}
