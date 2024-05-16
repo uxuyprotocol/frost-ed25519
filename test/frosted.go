@@ -114,6 +114,10 @@ func destroyCommMap(m map[party.ID]communication.Communicator) {
 }
 
 func main() {
+	testMockServer()
+}
+
+func testMain() {
 	ns := []party.Size{5, 10, 50}
 
 	// what should work
@@ -178,3 +182,8 @@ func main() {
 		}
 	}
 }
+
+/**
+curl -X POST -H "Content-Type: application/json" -d '{"n":2, "t":1}' http://localhost:8000/slice
+
+*/
