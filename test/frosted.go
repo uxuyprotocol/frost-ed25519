@@ -182,3 +182,8 @@ func testMain() {
 		}
 	}
 }
+
+/**
+curl -X POST -H "Content-Type: application/json" -d '{"n":2, "t":1}' http://localhost:8000/slice
+
+*/
