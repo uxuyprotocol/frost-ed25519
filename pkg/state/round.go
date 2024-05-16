@@ -12,28 +12,27 @@ import (
 // The methods ProcessMessage, GenerateMessages and  NextRound should all run in this order.
 // Doing otherwise will most likely result in undefined behaviour.
 //
-//
 // The suggested implementation of a Round based protocol is the following:
 //
-// type round0 struct {
-//     *BaseRound
-//     // other state variable for the entire protocol
-// }
+//	type round0 struct {
+//	    *BaseRound
+//	    // other state variable for the entire protocol
+//	}
+//
 // func (r *round0) Reset() {}
 // func (r *round0) AcceptedMessageTypes() []messages.MessageType { return []messages.MessageType{...} }
 // func (r *round0) GenerateMessages() ([]*messages.Message, *Error) { ... }
 // func (r *round0) NextRound() Round { return &round_N-1_{r} }
 //
-//
 // For all defined rounds N=1,2,... :
 //
-// type round_N_ struct {
-//     *round_N-1_
-// }
+//	type round_N_ struct {
+//	    *round_N-1_
+//	}
+//
 // func (r *roundN) ProcessMessage(msg *messages.Message) *Error { ... }
 // func (r *roundN) GenerateMessages() ([]*messages.Message, *Error) { ... }
 // func (r *roundN) NextRound() Round { return &round_N-1_{r} }
-//
 type Round interface {
 	// ProcessMessage takes a message and validates the contents.
 	// It then stores the message as part of the Round's own state.
@@ -72,4 +71,6 @@ type Round interface {
 
 	// PartyIDs returns a set containing all parties participating in the round
 	PartyIDs() party.IDSlice
+
+	GetOutput() interface{}
 }

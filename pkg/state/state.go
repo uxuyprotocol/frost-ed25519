@@ -1,6 +1,7 @@
 package state
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sync"
@@ -30,6 +31,8 @@ type State struct {
 	err      *Error
 
 	mtx sync.Mutex
+
+	RoundData []byte
 }
 
 func NewBaseState(round Round, timeout time.Duration) (*State, error) {
@@ -80,6 +83,7 @@ func (s *State) wrapError(err error, culprit party.ID) error {
 func (s *State) HandleMessage(msg *messages.Message) error {
 	senderID := msg.From
 
+	fmt.Println("handleMsg.....", senderID, s.round.SelfID(), s.roundNumber)
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
 
@@ -119,6 +123,7 @@ func (s *State) HandleMessage(msg *messages.Message) error {
 
 	if msg.Type == s.acceptedTypes[0] {
 		s.receivedMessages[senderID] = msg
+		fmt.Println("received accepted message", msg)
 	} else {
 		s.queue = append(s.queue, msg)
 	}
@@ -141,15 +146,19 @@ func (s *State) ProcessAll() []*messages.Message {
 	}
 
 	// Only continue if we received messages from all
+
+	fmt.Println("proMsg...", len(s.receivedMessages), s.round.PartyIDs().N()-1, s.roundNumber)
 	if len(s.receivedMessages) != int(s.round.PartyIDs().N()-1) {
 		return nil
 	}
 
 	for _, msg := range s.receivedMessages {
+
 		if err := s.round.ProcessMessage(msg); err != nil {
 			s.reportError(err)
 			return nil
 		}
+		fmt.Println("end processed message")
 	}
 
 	// remove all messages that have been processed
@@ -182,6 +191,7 @@ func (s *State) ProcessAll() []*messages.Message {
 	nextRound := s.round.NextRound()
 	if nextRound == nil {
 		s.finish()
+		fmt.Println("finish next round")
 	} else {
 		s.roundNumber++
 		s.round = nextRound
@@ -199,9 +209,7 @@ func (s *State) isAcceptedType(msgType messages.MessageType) bool {
 	return false
 }
 
-//
 // Output
-//
 func (s *State) finish() {
 	if s.done {
 		return
@@ -228,10 +236,9 @@ func (s *State) reportError(err *Error) {
 
 // Done should be called like context.Done:
 //
-// select {
-//   case <-s.Done():
-//   // other cases
-//
+//	select {
+//	  case <-s.Done():
+//	  // other cases
 func (s *State) Done() <-chan struct{} {
 	return s.doneChan
 }
@@ -256,6 +263,126 @@ func (s *State) WaitForError() error {
 // IsFinished returns true if the protocol has aborted or successfully finished.
 func (s *State) IsFinished() bool {
 	return s.done
+}
+
+type stateJSON struct {
+	AcceptedTypes    []messages.MessageType `json:"acceptedTypes"`
+	ReceivedMessages map[uint16][]byte      `json:"receivedMessages"`
+	Queue            [][]byte               `json:"queue"`
+	RoundNumber      int                    `json:"roundNumber"`
+	Round            []byte                 `json:"round"`
+	Done             bool                   `json:"done,omitempty"`
+}
+
+// MarshalJSON implements the json.Marshaller interface.
+func (s *State) MarshalJSON() ([]byte, error) {
+
+	recContainer := make(map[uint16][]byte)
+	for id, msg := range s.receivedMessages {
+		if msg == nil {
+			continue
+		}
+		data, err := msg.MarshalBinary()
+		if err != nil {
+			return nil, err
+		}
+		recContainer[uint16(id)] = data
+	}
+
+	queueContainer := make([][]byte, len(s.queue))
+	for _, q := range s.queue {
+		data, err := q.MarshalBinary()
+		if err != nil {
+			return nil, err
+		}
+		queueContainer = append(queueContainer, data)
+	}
+
+	roundData, err := json.Marshal(s.round)
+	if err != nil {
+		return nil, err
+	}
+
+	//fmt.Println("mar--------------------------")
+	//fmt.Println(s.roundNumber, len(s.acceptedTypes), len(recContainer), len(roundData), len(queueContainer))
+	//fmt.Println("mar end--------------------------")
+
+	return json.Marshal(stateJSON{
+		AcceptedTypes:    s.acceptedTypes,
+		ReceivedMessages: recContainer,
+		Queue:            queueContainer,
+		RoundNumber:      s.roundNumber,
+		Round:            roundData,
+		Done:             s.done,
+	})
+}
+
+func (s *State) UnmarshalJSON(data []byte) error {
+	var rawJson stateJSON
+	err := json.Unmarshal(data, &rawJson)
+	if err != nil {
+		return err
+	}
+
+	recContainer := make(map[party.ID]*messages.Message)
+	for id, msg := range rawJson.ReceivedMessages {
+		var msg1 messages.Message
+		if msg == nil {
+			continue
+		}
+		err := msg1.UnmarshalBinary(msg)
+		if err != nil {
+			return err
+		}
+		recContainer[party.ID(id)] = &msg1
+	}
+
+	queueContainer := make([]*messages.Message, len(rawJson.Queue))
+	for i, q := range rawJson.Queue {
+		if q == nil {
+			continue
+		}
+		var msg messages.Message
+		err := msg.UnmarshalBinary(q)
+		if err != nil {
+			return err
+		}
+		queueContainer[i] = &msg
+	}
+
+	//var r1 Round
+	//Round.UnmarshalRound()
+	//r1, err = Round.UnmarshalRound(r1, rawJson.Round)
+
+	//err = json.Unmarshal(rawJson.Round, &r1)
+	//if err != nil {
+	//	return err
+	//}
+
+	*s = State{
+		acceptedTypes:    rawJson.AcceptedTypes,
+		receivedMessages: recContainer,
+		queue:            queueContainer,
+		roundNumber:      rawJson.RoundNumber,
+		//round:            r1,
+		RoundData: rawJson.Round,
+		doneChan:  make(chan struct{}),
+		done:      rawJson.Done,
+	}
+
+	return nil
+}
+
+func (s *State) SetRound(round Round) {
+	s.round = round
+}
+
+func (s *State) GetRoundNumber() int {
+	return s.roundNumber
+}
+
+func (s *State) GetRound() Round {
+	return s.round
 }
 
 //
