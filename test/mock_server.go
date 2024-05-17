@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"github.com/hashicorp/go-uuid"
@@ -43,7 +44,7 @@ type SolTrans struct {
 	From    string `json:"from"`
 	To      string `json:"to"`
 	Amount  uint64 `json:"amount"`
-	IsDev   bool   `json:"is_div"`
+	IsDev   bool   `json:"is_dev"`
 	TransID string `json:"trans_id"`
 	Sig     string `json:"sig"`
 }
@@ -56,10 +57,13 @@ var solTransPool []SolTrans
 
 var serverSlice = Slice{
 	SessionId: "server001",
+
+	Slice: "ewogIlNlY3JldHMiOiB7CiAgIjIiOiB7CiAgICJpZCI6IDIsCiAgICJzZWNyZXQiOiAibTFyaUNtUkZGTFpKMFlWbHN0bTE2RjJXWFg3QUxUZXpYY3VCWHl1N1Z3TT0iCiAgfQogfSwKICJTaGFyZXMiOiB7CiAgInQiOiAxLAogICJncm91cGtleSI6ICJuZzgwaWVCRC9JNnJKdjJ5TmR6QUpIRVpzM3p5RHNmTDFnVUFtbHJLbEY0PSIsCiAgInNoYXJlcyI6IHsKICAgIjEiOiAibG1YeE4rWjBJZy9NYlhRUUN3VGJ5YktjUUNjN0RuVERybVVPLzNLTFVpUT0iLAogICAiMiI6ICJqTXUwVGd1RzNWd1JiTHVwTkZMeGp2cG9Pank2bklCZy90K2FyOUJ0VndjPSIKICB9CiB9Cn0=",
 }
 
 var serverMpc = MpcSign{
 	SessionId: "server001",
+	SliceKey:  "ewogIlNlY3JldHMiOiB7CiAgIjIiOiB7CiAgICJpZCI6IDIsCiAgICJzZWNyZXQiOiAibTFyaUNtUkZGTFpKMFlWbHN0bTE2RjJXWFg3QUxUZXpYY3VCWHl1N1Z3TT0iCiAgfQogfSwKICJTaGFyZXMiOiB7CiAgInQiOiAxLAogICJncm91cGtleSI6ICJuZzgwaWVCRC9JNnJKdjJ5TmR6QUpIRVpzM3p5RHNmTDFnVUFtbHJLbEY0PSIsCiAgInNoYXJlcyI6IHsKICAgIjEiOiAibG1YeE4rWjBJZy9NYlhRUUN3VGJ5YktjUUNjN0RuVERybVVPLzNLTFVpUT0iLAogICAiMiI6ICJqTXUwVGd1RzNWd1JiTHVwTkZMeGp2cG9Pank2bklCZy90K2FyOUJ0VndjPSIKICB9CiB9Cn0=",
 }
 
 func handleDkgClientRound(round int, message string) (string, error) {
@@ -102,10 +106,12 @@ func handleDkgClientRound(round int, message string) (string, error) {
 }
 
 func handleSignClientRound(round int, yMsg string, message string) (string, error) {
+
+	var unsignmessage = message
+
 	switch round {
 	case 0:
-
-		out, err := ed25519.MPCPartSignRound0(2, 1, serverSlice.Slice, message)
+		out, err := ed25519.MPCPartSignRound0(2, 1, serverSlice.Slice, unsignmessage)
 		if err != nil {
 			return "", err
 		}
@@ -126,7 +132,7 @@ func handleSignClientRound(round int, yMsg string, message string) (string, erro
 		serverMpc.Message2 = msg2
 		return msg2, nil
 	case 2:
-		sig, err := ed25519.MPCPartSignRound2(1, serverMpc.OutputData, yMsg, message)
+		sig, err := ed25519.MPCPartSignRound2(1, serverMpc.OutputData, yMsg, unsignmessage)
 		if err != nil {
 			return "", err
 		}
@@ -230,8 +236,17 @@ func mpcHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+
+		gk, err := ed25519.GetGroupkeyFromSlice(slice)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		address := solana.GetSolAddress(gk)
+
 		fmt.Println("dkg server slice: ", slice)
-		jsonstr := fmt.Sprintf(`{"round": %d, "message": "%s"}`, 2, "dkg success!")
+		jsonstr := fmt.Sprintf(`{"message":"success", "sol_address": "%v"}`, 2, address)
+		fmt.Println(jsonstr)
 
 		data, err := json.Marshal(jsonstr)
 		if err != nil {
@@ -300,6 +315,7 @@ func mpcSignHandler(w http.ResponseWriter, r *http.Request) {
 
 	switch signFromClient.Round {
 	case 0:
+
 		_, er := handleSignClientRound(signFromClient.Round, "", signFromClient.SignMsg)
 		if er != nil {
 			http.Error(w, er.Error(), http.StatusInternalServerError)
@@ -338,9 +354,11 @@ func mpcSignHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		var trans *SolTrans
-		for _, sol := range solTransPool {
+		var index int
+		for i, sol := range solTransPool {
 			if sol.TransID == signFromClient.TransID {
 				trans = &sol
+				index = i
 				break
 			}
 		}
@@ -355,6 +373,9 @@ func mpcSignHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		trans.Sig = sig
+
+		fmt.Println("set sig: ", trans.Sig)
+		solTransPool[index] = *trans
 
 		jsonstr := fmt.Sprintf(`{"round": %d, "trans": "%s"}`, 2, signFromClient.TransID)
 
@@ -381,6 +402,9 @@ func initSolTransHandler(w http.ResponseWriter, r *http.Request) {
 
 	body, err := ioutil.ReadAll(r.Body)
 
+	fmt.Println("------initSolTransHandler--------")
+	fmt.Println(string(body), err)
+
 	if err != nil {
 		fmt.Println(err)
 		http.Error(w, "Error reading request body", http.StatusInternalServerError)
@@ -395,7 +419,14 @@ func initSolTransHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	transMsg, err := solana.InitSolTransaction(input.From, input.To, input.Amount, input.IsDev)
+	from, err := base64.StdEncoding.DecodeString(input.From)
+	to, err := base64.StdEncoding.DecodeString(input.To)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Error unmarshalling JSON", http.StatusBadRequest)
+		return
+	}
+	transMsg, err := solana.InitSolTransaction(from, to, input.Amount, input.IsDev)
 	if err != nil {
 		fmt.Println(err)
 		http.Error(w, "Error initializing transaction", http.StatusInternalServerError)
@@ -413,7 +444,16 @@ func initSolTransHandler(w http.ResponseWriter, r *http.Request) {
 	input.TransID = transId
 	solTransPool = append(solTransPool, input)
 
-	jsonstr := fmt.Sprintf(`{"trans_id": "%s", "trans_message": "%s"}`, transId, transMsg)
+	fmt.Println("add to transpool", input)
+
+	type response struct {
+		TransID  string `json:"trans_id"`
+		TransMsg string `json:"trans_message"`
+	}
+
+	jsonstr := response{transId, transMsg}
+	fmt.Println("-------initsol response -----------")
+	fmt.Println(jsonstr)
 
 	data, err := json.Marshal(jsonstr)
 	if err != nil {
@@ -434,6 +474,9 @@ func submitSolTransHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	body, err := ioutil.ReadAll(r.Body)
+
+	fmt.Println("------submitSolTransHandler--------")
+	fmt.Println(string(body), err)
 
 	if err != nil {
 		fmt.Println(err)
@@ -466,16 +509,35 @@ func submitSolTransHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	transHash, err := solana.SubmitSolTransaction(trans.Sig, trans.From, trans.To, trans.Amount, trans.IsDev)
+	from, err := base64.StdEncoding.DecodeString(trans.From)
+	to, err := base64.StdEncoding.DecodeString(trans.To)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Error unmarshalling JSON", http.StatusBadRequest)
+		return
+	}
+
+	fmt.Println("submitSolTrans params--------------")
+	fmt.Printf("[%v,%v,%v,%v,%v]\n", trans.Sig, from, to, trans.Amount, trans.IsDev)
+
+	transHash, err := solana.SubmitSolTransaction(trans.Sig, from, to, trans.Amount, trans.IsDev)
 	if err != nil {
 		fmt.Println(err)
 		http.Error(w, "Error submitting transaction", http.StatusInternalServerError)
 		return
 	}
 
-	jsonstr := fmt.Sprintf(`{"trans_hash": "%s", "message": "trans success!"}`, transHash)
+	type response struct {
+		TransHash string `json:"trans_hash"`
+		Message   string `json:"message"`
+	}
 
-	data, err := json.Marshal(jsonstr)
+	res := response{
+		transHash,
+		"success",
+	}
+
+	data, err := json.Marshal(res)
 	if err != nil {
 		http.Error(w, "Error marshalling JSON", http.StatusInternalServerError)
 		return
@@ -513,7 +575,7 @@ func testMockServer() {
 	http.HandleFunc("/mpc_sign", mpcSignHandler)
 	http.HandleFunc("/pools", poolsHandler)
 	http.HandleFunc("/init_sol_transaction", initSolTransHandler)
-	http.HandleFunc("/sublit_sol_transaction", submitSolTransHandler)
+	http.HandleFunc("/sublmit_sol_transaction", submitSolTransHandler)
 
 	fmt.Println("Starting server on port 8000")
 	err := http.ListenAndServe(":8000", nil)

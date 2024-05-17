@@ -1,17 +1,13 @@
 /*
 This file is not intended to be run by itself and serves mostly as an example of how to interact with FROST-Ed25519.
 */
-package example
+package main
 
 import (
-	"crypto/ed25519"
-	"log"
-	"time"
-
-	"github.com/taurusgroup/frost-ed25519/pkg/frost"
-	"github.com/taurusgroup/frost-ed25519/pkg/frost/party"
 	"github.com/taurusgroup/frost-ed25519/pkg/messages"
 	"github.com/taurusgroup/frost-ed25519/pkg/state"
+	"github.com/taurusgroup/frost-ed25519/solana"
+	"log"
 )
 
 // these channels are placeholders for a transport layer
@@ -48,49 +44,58 @@ func MessageRoutine(msgsIn, msgsOut chan *messages.Message, s *state.State) {
 }
 
 func main() {
-	selfID := party.ID(1)
-	threshold := party.Size(2)
-	set := party.NewIDSlice([]party.ID{selfID, 2, 42, 8})
 
-	keygenState, keygenOutput, err := frost.NewKeygenState(selfID, set, threshold, 2*time.Second)
-	if err != nil {
-		panic(err)
-	}
+	fromaddress := "KQHciAFkGjzKkvpHNHy+vf+1s/12+4eByIzPtI2ZPyw="
+	toaddress := "pPBYrTuKW4afiQNYEK2edJ3yr84uGw2f1/d2UL0/zzg="
+	solana.GetSolanaBalance(fromaddress)
+	solana.GetSolanaBalance(toaddress)
 
-	// Handle messages in another thread
-	go MessageRoutine(messagesIn, messagesOut, keygenState)
+	/*
+		selfID := party.ID(1)
+		threshold := party.Size(2)
+		set := party.NewIDSlice([]party.ID{selfID, 2, 42, 8})
 
-	// Block until the protocol has finished
-	err = keygenState.WaitForError()
-	if err != nil {
-		// the protocol has aborted
-	}
-	// It is now safe to access the output
-	public := keygenOutput.Public
-	groupKey := public.GroupKey
-	secretShare := keygenOutput.SecretKey
+		keygenState, keygenOutput, err := frost.NewKeygenState(selfID, set, threshold, 2*time.Second)
+		if err != nil {
+			panic(err)
+		}
 
-	message := []byte("example")
+		// Handle messages in another thread
+		go MessageRoutine(messagesIn, messagesOut, keygenState)
 
-	// Get a smaller set of size t+1
-	signers := party.NewIDSlice([]party.ID{selfID, 2, 8})
-	signState, signOutput, err := frost.NewSignState(signers, secretShare, public, message, 1*time.Second)
-	if err != nil {
-		panic(err)
-	}
+		// Block until the protocol has finished
+		err = keygenState.WaitForError()
+		if err != nil {
+			// the protocol has aborted
+		}
+		// It is now safe to access the output
+		public := keygenOutput.Public
+		groupKey := public.GroupKey
+		secretShare := keygenOutput.SecretKey
 
-	// Handle messages in another thread
-	go MessageRoutine(messagesIn, messagesOut, signState)
+		message := []byte("example")
 
-	// Block until the protocol has finished
-	err = signState.WaitForError()
-	if err != nil {
-		// the protocol has aborted
-	}
+		// Get a smaller set of size t+1
+		signers := party.NewIDSlice([]party.ID{selfID, 2, 8})
+		signState, signOutput, err := frost.NewSignState(signers, secretShare, public, message, 1*time.Second)
+		if err != nil {
+			panic(err)
+		}
 
-	// Verify signature
-	groupSig := signOutput.Signature
-	if !ed25519.Verify(groupKey.ToEd25519(), message, groupSig.ToEd25519()) {
-		log.Println("failed to validate single signature")
-	}
+		// Handle messages in another thread
+		go MessageRoutine(messagesIn, messagesOut, signState)
+
+		// Block until the protocol has finished
+		err = signState.WaitForError()
+		if err != nil {
+			// the protocol has aborted
+		}
+
+		// Verify signature
+		groupSig := signOutput.Signature
+		if !ed25519.Verify(groupKey.ToEd25519(), message, groupSig.ToEd25519()) {
+			log.Println("failed to validate single signature")
+		}
+
+	*/
 }
