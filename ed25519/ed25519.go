@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/gagliardetto/solana-go"
 	"github.com/taurusgroup/frost-ed25519/pkg/eddsa"
 	"github.com/taurusgroup/frost-ed25519/pkg/frost"
 	"github.com/taurusgroup/frost-ed25519/pkg/frost/party"
@@ -1100,6 +1101,12 @@ func GetMessageFromSignOutData(kgOutputData []byte, msgIndex int) (string, error
 		msg := KeygenMsg2String(state.Message2)
 		return msg, nil
 	}
+}
+
+// GetSolAddress 生成 Solana 地址
+func GetSolAddress(publicKey []byte) string {
+	account := solana.PublicKeyFromBytes(publicKey)
+	return account.String()
 }
 
 // dpkTest 分布式分片生成

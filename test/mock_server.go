@@ -3,7 +3,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/hashicorp/go-uuid"
 	"github.com/taurusgroup/frost-ed25519/ed25519"
+	"github.com/taurusgroup/frost-ed25519/solana"
 
 	"io/ioutil"
 	"log"
@@ -34,11 +36,23 @@ type MpcSign struct {
 	SliceKey   string `json:"slice_key,omitempty"`
 	OutputData []byte `json:"output_data,omitempty"`
 	SessionId  string `json:"session_id"`
+	TransID    string `json:"trans_id,omitempty"`
+}
+
+type SolTrans struct {
+	From    string `json:"from"`
+	To      string `json:"to"`
+	Amount  uint64 `json:"amount"`
+	IsDev   bool   `json:"is_div"`
+	TransID string `json:"trans_id"`
+	Sig     string `json:"sig"`
 }
 
 var dkgPool []Slice
 
-var mpcPool []Slice
+var signPool []MpcSign
+
+var solTransPool []SolTrans
 
 var serverSlice = Slice{
 	SessionId: "server001",
@@ -233,6 +247,7 @@ func mpcHandler(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, fmt.Sprintf("round number invalid [%d]", sliceFromClient.Round), http.StatusInternalServerError)
 }
 
+// mpcSignHandler 生成交易签名
 func mpcSignHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
@@ -255,20 +270,20 @@ func mpcSignHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("request----------------------------------")
 	fmt.Println(string(body), err)
 
-	//found := false
-	//for i, d := range dkgPool {
-	//	if d.SessionId == signFromClient.SessionId {
-	//		// Update the Slice in dkgPool
-	//		dkgPool[i] = signFromClient
-	//		found = true
-	//		break
-	//	}
-	//}
-	//
-	//if !found {
-	//	// Append sliceFromClient to dkgPool
-	//	dkgPool = append(dkgPool, signFromClient)
-	//}
+	found := false
+	for i, d := range signPool {
+		if d.SessionId == signFromClient.SessionId {
+			// Update the Slice in dkgPool
+			signPool[i] = signFromClient
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		// Append sliceFromClient to dkgPool
+		signPool = append(signPool, signFromClient)
+	}
 
 	if signFromClient.SessionId == "" {
 		http.Error(w, "Invalid Slice Context", http.StatusInternalServerError)
@@ -317,15 +332,31 @@ func mpcSignHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write(data)
 		return
 	case 2:
+
+		if signFromClient.TransID == "" {
+			http.Error(w, "trans_id must not be null", http.StatusBadRequest)
+			return
+		}
+		var trans *SolTrans
+		for _, sol := range solTransPool {
+			if sol.TransID == signFromClient.TransID {
+				trans = &sol
+				break
+			}
+		}
+		if trans == nil {
+			http.Error(w, "Can't found this trans", http.StatusBadRequest)
+		}
+
 		sig, er := handleSignClientRound(signFromClient.Round, signFromClient.Message2, signFromClient.SignMsg)
 		if er != nil {
 			fmt.Println(er)
 			http.Error(w, er.Error(), http.StatusInternalServerError)
 			return
 		}
+		trans.Sig = sig
 
-		fmt.Println("sig ", sig)
-		jsonstr := fmt.Sprintf(`{"round": %d, "message": "%s"}`, 2, sig)
+		jsonstr := fmt.Sprintf(`{"round": %d, "trans": "%s"}`, 2, signFromClient.TransID)
 
 		data, err := json.Marshal(jsonstr)
 		if err != nil {
@@ -339,6 +370,118 @@ func mpcSignHandler(w http.ResponseWriter, r *http.Request) {
 	//w.Write(response)
 	fmt.Println(response)
 	http.Error(w, fmt.Sprintf("round number invalid [%d]", signFromClient.Round), http.StatusInternalServerError)
+}
+
+// initSolTransHandler 初始化 solana 交易，生成交易 msg
+func initSolTransHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	body, err := ioutil.ReadAll(r.Body)
+
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Error reading request body", http.StatusInternalServerError)
+		return
+	}
+
+	var input SolTrans
+	err = json.Unmarshal(body, &input)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Error unmarshalling JSON", http.StatusBadRequest)
+		return
+	}
+
+	transMsg, err := solana.InitSolTransaction(input.From, input.To, input.Amount, input.IsDev)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Error initializing transaction", http.StatusInternalServerError)
+		return
+	}
+	//生成交易ID
+	transId, err := uuid.GenerateUUID()
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Error generating UUID", http.StatusInternalServerError)
+		return
+	}
+
+	// 添加到 transPool
+	input.TransID = transId
+	solTransPool = append(solTransPool, input)
+
+	jsonstr := fmt.Sprintf(`{"trans_id": "%s", "trans_message": "%s"}`, transId, transMsg)
+
+	data, err := json.Marshal(jsonstr)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Error marshalling JSON", http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(data)
+	return
+}
+
+// 完成 Solana 交易
+func submitSolTransHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	body, err := ioutil.ReadAll(r.Body)
+
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Error reading request body", http.StatusInternalServerError)
+		return
+	}
+
+	type Input struct {
+		TransID string `json:"trans_id"`
+	}
+
+	var input Input
+	err = json.Unmarshal(body, &input)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Error unmarshalling JSON", http.StatusBadRequest)
+		return
+	}
+
+	var trans *SolTrans
+	for _, sol := range solTransPool {
+		if sol.TransID == input.TransID {
+			trans = &sol
+			break
+		}
+	}
+
+	if trans == nil {
+		http.Error(w, "No trans record found! ", http.StatusBadRequest)
+		return
+	}
+
+	transHash, err := solana.SubmitSolTransaction(trans.Sig, trans.From, trans.To, trans.Amount, trans.IsDev)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Error submitting transaction", http.StatusInternalServerError)
+		return
+	}
+
+	jsonstr := fmt.Sprintf(`{"trans_hash": "%s", "message": "trans success!"}`, transHash)
+
+	data, err := json.Marshal(jsonstr)
+	if err != nil {
+		http.Error(w, "Error marshalling JSON", http.StatusInternalServerError)
+		return
+	}
+	w.Write(data)
+	return
 }
 
 func poolsHandler(w http.ResponseWriter, r *http.Request) {
@@ -369,6 +512,8 @@ func testMockServer() {
 	http.HandleFunc("/slice", mpcHandler)
 	http.HandleFunc("/mpc_sign", mpcSignHandler)
 	http.HandleFunc("/pools", poolsHandler)
+	http.HandleFunc("/init_sol_transaction", initSolTransHandler)
+	http.HandleFunc("/sublit_sol_transaction", submitSolTransHandler)
 
 	fmt.Println("Starting server on port 8000")
 	err := http.ListenAndServe(":8000", nil)

@@ -1,32 +1,19 @@
-// package solana
-package main
+package solana
+
+//package main
 
 import (
 	"context"
-	"crypto/ed25519"
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
-	"github.com/blocto/solana-go-sdk/client"
-	sdkRpc "github.com/blocto/solana-go-sdk/rpc"
-	"github.com/blocto/solana-go-sdk/types"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gagliardetto/solana-go"
 	"github.com/gagliardetto/solana-go/programs/system"
 	"github.com/gagliardetto/solana-go/rpc"
 	confirm "github.com/gagliardetto/solana-go/rpc/sendAndConfirmTransaction"
 	"github.com/gagliardetto/solana-go/rpc/ws"
-	//"github.com/blocto/solana-go-sdk/rpc"
-	"github.com/taurusgroup/frost-ed25519/pkg/eddsa"
-	"github.com/taurusgroup/frost-ed25519/pkg/frost"
-	"github.com/taurusgroup/frost-ed25519/pkg/frost/party"
-	"github.com/taurusgroup/frost-ed25519/pkg/frost/sign"
-	"github.com/taurusgroup/frost-ed25519/pkg/helpers"
-	"github.com/taurusgroup/frost-ed25519/pkg/state"
-	"log"
-	"strings"
 )
 
+/*
 type Secret struct {
 	ID     int    `json:"id"`
 	Secret string `json:"secret"`
@@ -589,6 +576,130 @@ func solTransTestv2() {
 
 }
 
+*/
+
+// InitSolTransaction 初始化一笔 Sol 交易
+func InitSolTransaction(from string, to string, amount uint64, isDev bool) (string, error) {
+
+	var rpcClient *rpc.Client
+	if isDev {
+		rpcClient = rpc.New(rpc.DevNet_RPC)
+	} else {
+		rpcClient = rpc.New(rpc.MainNetBeta_RPC)
+	}
+
+	fromAccount, err := solana.PublicKeyFromBase58(from)
+	if err != nil {
+		return "", err
+	}
+	toAccount, err := solana.PublicKeyFromBase58(from)
+	if err != nil {
+		return "", err
+	}
+	recent, err := rpcClient.GetRecentBlockhash(context.TODO(), rpc.CommitmentFinalized)
+	if err != nil {
+		return "", err
+	}
+
+	tx, err := solana.NewTransaction(
+		[]solana.Instruction{
+			system.NewTransferInstruction(
+				amount,
+				fromAccount,
+				toAccount,
+			).Build(),
+		},
+		recent.Value.Blockhash,
+		solana.TransactionPayer(fromAccount),
+	)
+	if err != nil {
+		return "", err
+	}
+
+	messageBytes, err := tx.Message.MarshalBinary()
+
+	if err != nil {
+		return "", err
+	}
+	return string(messageBytes), nil
+}
+
+// SubmitSolTransaction 根据签名完成一笔交易
+func SubmitSolTransaction(sig string, from string, to string, amount uint64, isDev bool) (string, error) {
+	// 将签名解码为字节片
+	signature := solana.SignatureFromBytes([]byte(sig))
+
+	var rpcClient *rpc.Client
+	if isDev {
+		rpcClient = rpc.New(rpc.DevNet_RPC)
+	} else {
+		rpcClient = rpc.New(rpc.MainNetBeta_RPC)
+	}
+
+	fromAccount, err := solana.PublicKeyFromBase58(from)
+	if err != nil {
+		return "", err
+	}
+	toAccount, err := solana.PublicKeyFromBase58(from)
+	if err != nil {
+		return "", err
+	}
+	recent, err := rpcClient.GetRecentBlockhash(context.TODO(), rpc.CommitmentFinalized)
+	if err != nil {
+		return "", err
+	}
+
+	tx, err := solana.NewTransaction(
+		[]solana.Instruction{
+			system.NewTransferInstruction(
+				amount,
+				fromAccount,
+				toAccount,
+			).Build(),
+		},
+		recent.Value.Blockhash,
+		solana.TransactionPayer(fromAccount),
+	)
+	if err != nil {
+		return "", err
+	}
+	//添加签名
+	tx.Signatures = append(tx.Signatures, signature)
+
+	//签名校验
+	err = tx.VerifySignatures() // 将签名追加到交易的签名字段中
+	if err != nil {
+		return "", err
+	}
+
+	var wsClient *ws.Client
+	if isDev {
+		wsClient, err = ws.Connect(context.Background(), rpc.DevNet_WS)
+		if err != nil {
+			return "", err
+		}
+	} else {
+		wsClient, err = ws.Connect(context.Background(), rpc.MainNetBeta_WS)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	fsig, err := confirm.SendAndConfirmTransaction(
+		context.Background(),
+		rpcClient,
+		wsClient,
+		tx,
+	)
+	if err != nil {
+		return "", err
+	}
+	spew.Dump(sig)
+
+	fmt.Println("transaction finish: ", fsig.String(), recent.Value.Blockhash.String())
+	return recent.Value.Blockhash.String(), nil
+}
+
 func main() {
 
 	//fromAddress := "4xJ3bqT3zsAqBngPoCwtYhJiZ6Ax9riBCdTHKjUUZ5gr"
@@ -614,5 +725,5 @@ func main() {
 
 	//buildSolanaTransactionMsgV2(fromAddress, toAddress, 333, keys)
 
-	solTransTestv2()
+	//solTransTestv2()
 }
