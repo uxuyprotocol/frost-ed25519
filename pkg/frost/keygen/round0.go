@@ -1,11 +1,11 @@
 package keygen
 
 import (
-	"github.com/taurusgroup/frost-ed25519/pkg/internal/polynomial"
-	"github.com/taurusgroup/frost-ed25519/pkg/internal/scalar"
-	"github.com/taurusgroup/frost-ed25519/pkg/internal/zk"
-	"github.com/taurusgroup/frost-ed25519/pkg/messages"
-	"github.com/taurusgroup/frost-ed25519/pkg/state"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/internal/polynomial"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/internal/scalar"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/internal/zk"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/messages"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/state"
 )
 
 func (round *Round0) ProcessMessage(*messages.Message) *state.Error {

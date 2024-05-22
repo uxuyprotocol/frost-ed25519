@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/hashicorp/go-uuid"
-	"github.com/taurusgroup/frost-ed25519/ed25519"
-	"github.com/taurusgroup/frost-ed25519/solana"
+	"github.com/uxuyprotocol/frost-ed25519/ed25519"
+	"github.com/uxuyprotocol/frost-ed25519/solana"
 
 	"io/ioutil"
 	"log"

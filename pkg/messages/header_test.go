@@ -3,7 +3,7 @@ package messages
 import (
 	"testing"
 
-	"github.com/taurusgroup/frost-ed25519/pkg/frost/party"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/frost/party"
 )
 
 func TestHeader_UnmarshalBinary(t *testing.T) {

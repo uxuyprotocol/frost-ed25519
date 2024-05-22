@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/taurusgroup/frost-ed25519/pkg/frost/party"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/frost/party"
 )
 
 const headerSize = 1 + 2*party.IDByteSize

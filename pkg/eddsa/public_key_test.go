@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/taurusgroup/frost-ed25519/pkg/ristretto"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/ristretto"
 )
 
 func newKeyPair(key ed25519.PrivateKey) (*ristretto.Scalar, *PublicKey) {

@@ -8,7 +8,7 @@ import (
 	"math/rand"
 	"strconv"
 
-	"github.com/taurusgroup/frost-ed25519/pkg/ristretto"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/ristretto"
 )
 
 // IDByteSize is the number of bytes required to store and ID or Size
@@ -101,13 +101,17 @@ func (id *ID) UnmarshalText(text []byte) error {
 // The following formulas are taken from
 // https://en.wikipedia.org/wiki/Lagrange_polynomial
 //
-//			( x  - x₀) ... ( x  - xₖ)
-// lⱼ(x) =	---------------------------
-//			(xⱼ - x₀) ... (xⱼ - xₖ)
+//	( x  - x₀) ... ( x  - xₖ)
 //
-//			        x₀ ... xₖ
+// lⱼ(x) =	---------------------------
+//
+//	(xⱼ - x₀) ... (xⱼ - xₖ)
+//
+//	        x₀ ... xₖ
+//
 // lⱼ(0) =	---------------------------
-//			(x₀ - xⱼ) ... (xₖ - xⱼ)
+//
+//	(x₀ - xⱼ) ... (xₖ - xⱼ)
 //
 // returns an error if id is not included in partyIDs
 func (id ID) Lagrange(partyIDs IDSlice) (*ristretto.Scalar, error) {

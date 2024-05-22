@@ -3,7 +3,7 @@ package state
 import (
 	"fmt"
 
-	"github.com/taurusgroup/frost-ed25519/pkg/frost/party"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/frost/party"
 )
 
 // Error represents an error related to the protocol execution, and requires an abort.

@@ -3,9 +3,9 @@ package messages
 import (
 	"fmt"
 
-	"github.com/taurusgroup/frost-ed25519/pkg/frost/party"
-	"github.com/taurusgroup/frost-ed25519/pkg/internal/polynomial"
-	"github.com/taurusgroup/frost-ed25519/pkg/internal/zk"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/frost/party"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/internal/polynomial"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/internal/zk"
 )
 
 type KeyGen1 struct {

@@ -6,10 +6,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/taurusgroup/frost-ed25519/pkg/frost/party"
-	"github.com/taurusgroup/frost-ed25519/pkg/internal/polynomial"
-	"github.com/taurusgroup/frost-ed25519/pkg/internal/scalar"
-	"github.com/taurusgroup/frost-ed25519/pkg/ristretto"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/frost/party"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/internal/polynomial"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/internal/scalar"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/ristretto"
 )
 
 func fakeShares(n, t party.Size) (*Public, *ristretto.Scalar) {

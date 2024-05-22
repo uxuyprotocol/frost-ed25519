@@ -3,8 +3,8 @@ package keygen
 import (
 	"errors"
 
-	"github.com/taurusgroup/frost-ed25519/pkg/messages"
-	"github.com/taurusgroup/frost-ed25519/pkg/state"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/messages"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/state"
 )
 
 func (round *Round1) ProcessMessage(msg *messages.Message) *state.Error {

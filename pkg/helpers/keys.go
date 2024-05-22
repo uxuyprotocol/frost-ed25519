@@ -1,11 +1,11 @@
 package helpers
 
 import (
-	"github.com/taurusgroup/frost-ed25519/pkg/eddsa"
-	"github.com/taurusgroup/frost-ed25519/pkg/frost/party"
-	"github.com/taurusgroup/frost-ed25519/pkg/internal/polynomial"
-	"github.com/taurusgroup/frost-ed25519/pkg/internal/scalar"
-	"github.com/taurusgroup/frost-ed25519/pkg/ristretto"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/eddsa"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/frost/party"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/internal/polynomial"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/internal/scalar"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/ristretto"
 )
 
 func GenerateSecrets(set party.IDSlice, threshold party.Size) (*ristretto.Scalar, map[party.ID]*eddsa.SecretShare) {

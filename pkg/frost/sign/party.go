@@ -3,7 +3,7 @@ package sign
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/taurusgroup/frost-ed25519/pkg/ristretto"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/ristretto"
 )
 
 // A signer represents the state we store for one particular

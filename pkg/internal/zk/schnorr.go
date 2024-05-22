@@ -3,9 +3,9 @@ package zk
 import (
 	"errors"
 
-	"github.com/taurusgroup/frost-ed25519/pkg/frost/party"
-	"github.com/taurusgroup/frost-ed25519/pkg/internal/scalar"
-	"github.com/taurusgroup/frost-ed25519/pkg/ristretto"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/frost/party"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/internal/scalar"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/ristretto"
 
 	"crypto/sha512"
 )
@@ -14,10 +14,10 @@ import (
 // the discrete logarithm of public = [secret] B
 //
 // The public parameters are:
-//   partyID: prover's uint32 ID
-//   context: 32 byte context string,
-//   public:  [secret] B
 //
+//	partyID: prover's uint32 ID
+//	context: 32 byte context string,
+//	public:  [secret] B
 type Schnorr struct {
 	// S = H( ID || CTX || public || M )
 	// R = k + secret • s
@@ -25,10 +25,11 @@ type Schnorr struct {
 }
 
 // NewSchnorrProof computes a NIZK proof of knowledge of discrete.
-//    partyID is the uint32 ID of the prover
-//    public is the point [private]•B
-//    context is a 32 byte context (if it is set to [0 ... 0] then we may be susceptible to replay attacks)
-//    private is the discrete log of public
+//
+//	partyID is the uint32 ID of the prover
+//	public is the point [private]•B
+//	context is a 32 byte context (if it is set to [0 ... 0] then we may be susceptible to replay attacks)
+//	private is the discrete log of public
 //
 // We sample a random Scalar k, and obtain M = [k]•B
 // S := H(ID,CTX,Public,M)
@@ -53,9 +54,10 @@ func NewSchnorrProof(partyID party.ID, public *ristretto.Element, context []byte
 }
 
 // Verify verifies that the zero knowledge proof is valid.
-//    partyID is the uint32 ID of the prover
-//    public is the point [private]•B
-//    context is a 32 byte context (if it is set to [0 ... 0] then we may be susceptible to replay attacks)
+//
+//	partyID is the uint32 ID of the prover
+//	public is the point [private]•B
+//	context is a 32 byte context (if it is set to [0 ... 0] then we may be susceptible to replay attacks)
 func (proof *Schnorr) Verify(partyID party.ID, public *ristretto.Element, context []byte) bool {
 	var MPrime, publicNeg ristretto.Element
 
@@ -69,10 +71,11 @@ func (proof *Schnorr) Verify(partyID party.ID, public *ristretto.Element, contex
 }
 
 // challenge computes the hash H(partyID, context, public, M), where
-//   partyID: prover's uint32 ID
-//   context: 32 byte context string,
-//   public:  [secret] B
-//   M:       [k] B
+//
+//	partyID: prover's uint32 ID
+//	context: 32 byte context string,
+//	public:  [secret] B
+//	M:       [k] B
 func challenge(partyID party.ID, context []byte, public, M *ristretto.Element) *ristretto.Scalar {
 	// S = H( ID || CTX || Public || M )
 	var S ristretto.Scalar

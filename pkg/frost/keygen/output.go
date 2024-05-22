@@ -2,7 +2,7 @@ package keygen
 
 import (
 	"encoding/json"
-	"github.com/taurusgroup/frost-ed25519/pkg/eddsa"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/eddsa"
 )
 
 type Output struct {
