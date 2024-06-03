@@ -4,10 +4,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/hashicorp/go-uuid"
 	"github.com/uxuyprotocol/frost-ed25519/ed25519"
 	"github.com/uxuyprotocol/frost-ed25519/solana"
-
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -37,7 +35,8 @@ type MpcSign struct {
 	SliceKey   string `json:"slice_key,omitempty"`
 	OutputData []byte `json:"output_data,omitempty"`
 	SessionId  string `json:"session_id"`
-	TransID    string `json:"trans_id,omitempty"`
+	//TransID    string `json:"trans_id,omitempty"`
+	TxHash string `json:"tx_hash,omitempty"`
 }
 
 type SolTrans struct {
@@ -47,6 +46,7 @@ type SolTrans struct {
 	IsDev   bool   `json:"is_dev"`
 	TransID string `json:"trans_id"`
 	Sig     string `json:"sig"`
+	TxHash  string `json:"tx_hash"`
 }
 
 var dkgPool []Slice
@@ -113,6 +113,8 @@ func handleSignClientRound(round int, yMsg string, message string) (string, erro
 	case 0:
 		out, err := ed25519.MPCPartSignRound0(2, 1, serverSlice.Slice, unsignmessage)
 		if err != nil {
+
+			fmt.Println("MPCPartSignRound0 error", err)
 			return "", err
 		}
 		msg1, err := ed25519.GetMessageFromSignOutData(out, 0)
@@ -203,8 +205,12 @@ func mpcHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, er.Error(), http.StatusInternalServerError)
 			return
 		}
-		jsonstr := fmt.Sprintf(`{"round": %d, "message": "%s"}`, 0, serverSlice.Message1)
-		data, err := json.Marshal(jsonstr)
+		//jsonstr := fmt.Sprintf(`{"round": %d, "message": "%s"}`, 0, serverSlice.Message1)
+		var jsonDict = make(map[string]interface{})
+		jsonDict["round"] = 0
+		jsonDict["message"] = serverSlice.Message1
+		//data, err := json.Marshal(jsonstr)
+		data, err := json.Marshal(jsonDict)
 		if err != nil {
 			http.Error(w, "Error marshalling JSON", http.StatusInternalServerError)
 			return
@@ -217,8 +223,13 @@ func mpcHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, er.Error(), http.StatusInternalServerError)
 			return
 		}
-		jsonstr := fmt.Sprintf(`{"round": %d, "message": "%s"}`, 1, serverSlice.Message2)
-		data, err := json.Marshal(jsonstr)
+		//jsonstr := fmt.Sprintf(`{"round": %d, "message": "%s"}`, 1, serverSlice.Message2)
+
+		var jsonDict = make(map[string]interface{})
+		jsonDict["round"] = 1
+		jsonDict["message"] = serverSlice.Message2
+		//data, err := json.Marshal(jsonstr)
+		data, err := json.Marshal(jsonDict)
 		if err != nil {
 			http.Error(w, "Error marshalling JSON", http.StatusInternalServerError)
 			return
@@ -237,18 +248,23 @@ func mpcHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		gk, err := ed25519.GetGroupkeyFromSlice(slice)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		address := solana.GetSolAddress(gk)
+		//gk, err := ed25519.GetGroupkeyFromSlice(slice)
+		//if err != nil {
+		//	http.Error(w, err.Error(), http.StatusInternalServerError)
+		//	return
+		//}
+		//address := solana.GetSolAddress(gk)
 
 		fmt.Println("dkg server slice: ", slice)
-		jsonstr := fmt.Sprintf(`{"message":"success", "sol_address": "%v"}`, 2, address)
-		fmt.Println(jsonstr)
+		//jsonstr := fmt.Sprintf(`{"message":"success", "sol_address": "%v"}`, 2, address)
+		//fmt.Println(jsonstr)
 
-		data, err := json.Marshal(jsonstr)
+		//data, err := json.Marshal(jsonstr)
+		var jsonDict = make(map[string]interface{})
+		jsonDict["round"] = 2
+		jsonDict["message"] = "success"
+		//data, err := json.Marshal(jsonstr)
+		data, err := json.Marshal(jsonDict)
 		if err != nil {
 			http.Error(w, "Error marshalling JSON", http.StatusInternalServerError)
 			return
@@ -305,30 +321,35 @@ func mpcSignHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response, err := json.Marshal(signFromClient)
-	if err != nil {
-		http.Error(w, "Error marshalling JSON", http.StatusInternalServerError)
-		return
-	}
+	//response, err := json.Marshal(signFromClient)
+	//if err != nil {
+	//	http.Error(w, "Error marshalling JSON", http.StatusInternalServerError)
+	//	return
+	//}
 
 	w.Header().Set("Content-Type", "application/json")
 
 	switch signFromClient.Round {
 	case 0:
 
+		fmt.Println("round0------")
 		_, er := handleSignClientRound(signFromClient.Round, "", signFromClient.SignMsg)
 		if er != nil {
 			http.Error(w, er.Error(), http.StatusInternalServerError)
 			return
 		}
-		jsonstr := fmt.Sprintf(`{"round": %d, "message": "%s"}`, 0, serverMpc.Message1)
-		data, err := json.Marshal(jsonstr)
+		//jsonstr := fmt.Sprintf(`{"round": %d, "message": "%s"}`, 0, serverMpc.Message1)
+		//data, err := json.Marshal(jsonstr)
+		var jsonDict = make(map[string]interface{})
+		jsonDict["round"] = 0
+		jsonDict["message"] = serverMpc.Message1
+		data, err := json.Marshal(jsonDict)
 		if err != nil {
 			http.Error(w, "Error marshalling JSON", http.StatusInternalServerError)
 			return
 		}
 		fmt.Println("-------response--------------")
-		fmt.Println(jsonstr)
+		fmt.Println(jsonDict)
 		w.Write(data)
 		return
 	case 1:
@@ -338,8 +359,12 @@ func mpcSignHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, er.Error(), http.StatusInternalServerError)
 			return
 		}
-		jsonstr := fmt.Sprintf(`{"round": %d, "message": "%s"}`, 1, serverMpc.Message2)
-		data, err := json.Marshal(jsonstr)
+		//jsonstr := fmt.Sprintf(`{"round": %d, "message": "%s"}`, 1, serverMpc.Message2)
+		//data, err := json.Marshal(jsonstr)
+		var jsonDict = make(map[string]interface{})
+		jsonDict["round"] = 1
+		jsonDict["message"] = serverMpc.Message2
+		data, err := json.Marshal(jsonDict)
 		if err != nil {
 			fmt.Println(er)
 			http.Error(w, "Error marshalling JSON", http.StatusInternalServerError)
@@ -349,14 +374,14 @@ func mpcSignHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	case 2:
 
-		if signFromClient.TransID == "" {
-			http.Error(w, "trans_id must not be null", http.StatusBadRequest)
+		if signFromClient.TxHash == "" {
+			http.Error(w, "tx_hash must not be null", http.StatusBadRequest)
 			return
 		}
 		var trans *SolTrans
 		var index int
 		for i, sol := range solTransPool {
-			if sol.TransID == signFromClient.TransID {
+			if sol.TxHash == signFromClient.TxHash {
 				trans = &sol
 				index = i
 				break
@@ -364,6 +389,7 @@ func mpcSignHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		if trans == nil {
 			http.Error(w, "Can't found this trans", http.StatusBadRequest)
+			return
 		}
 
 		sig, er := handleSignClientRound(signFromClient.Round, signFromClient.Message2, signFromClient.SignMsg)
@@ -372,14 +398,19 @@ func mpcSignHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, er.Error(), http.StatusInternalServerError)
 			return
 		}
+		fmt.Println("sig_res----,", trans, sig)
 		trans.Sig = sig
 
 		fmt.Println("set sig: ", trans.Sig)
 		solTransPool[index] = *trans
 
-		jsonstr := fmt.Sprintf(`{"round": %d, "trans": "%s"}`, 2, signFromClient.TransID)
-
-		data, err := json.Marshal(jsonstr)
+		//jsonstr := fmt.Sprintf(`{"round": %d, "trans": "%s"}`, 2, signFromClient.TransID)
+		//
+		//data, err := json.Marshal(jsonstr)
+		var jsonDict = make(map[string]interface{})
+		jsonDict["round"] = 2
+		jsonDict["tx_hash"] = signFromClient.TxHash
+		data, err := json.Marshal(jsonDict)
 		if err != nil {
 			http.Error(w, "Error marshalling JSON", http.StatusInternalServerError)
 			return
@@ -389,7 +420,7 @@ func mpcSignHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//w.Write(response)
-	fmt.Println(response)
+	//fmt.Println(response)
 	http.Error(w, fmt.Sprintf("round number invalid [%d]", signFromClient.Round), http.StatusInternalServerError)
 }
 
@@ -426,36 +457,37 @@ func initSolTransHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error unmarshalling JSON", http.StatusBadRequest)
 		return
 	}
-	transMsg, err := solana.InitSolTransaction(from, to, input.Amount, input.IsDev)
+	transMsg, txHash, err := solana.InitSolTransaction(from, to, input.Amount, input.IsDev)
 	if err != nil {
 		fmt.Println(err)
 		http.Error(w, "Error initializing transaction", http.StatusInternalServerError)
 		return
 	}
 	//生成交易ID
-	transId, err := uuid.GenerateUUID()
-	if err != nil {
-		fmt.Println(err)
-		http.Error(w, "Error generating UUID", http.StatusInternalServerError)
-		return
-	}
+	//transId, err := uuid.GenerateUUID()
+	//if err != nil {
+	//	fmt.Println(err)
+	//	http.Error(w, "Error generating UUID", http.StatusInternalServerError)
+	//	return
+	//}
 
 	// 添加到 transPool
-	input.TransID = transId
+	input.TxHash = txHash
 	solTransPool = append(solTransPool, input)
 
 	fmt.Println("add to transpool", input)
 
 	type response struct {
-		TransID  string `json:"trans_id"`
 		TransMsg string `json:"trans_message"`
+		TxHash   string `json:"tx_hash"`
 	}
 
-	jsonstr := response{transId, transMsg}
+	jsonstr := response{transMsg, txHash}
 	fmt.Println("-------initsol response -----------")
 	fmt.Println(jsonstr)
 
 	data, err := json.Marshal(jsonstr)
+
 	if err != nil {
 		fmt.Println(err)
 		http.Error(w, "Error marshalling JSON", http.StatusInternalServerError)
@@ -485,7 +517,7 @@ func submitSolTransHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type Input struct {
-		TransID string `json:"trans_id"`
+		TxHash string `json:"tx_hash"`
 	}
 
 	var input Input
@@ -498,7 +530,7 @@ func submitSolTransHandler(w http.ResponseWriter, r *http.Request) {
 
 	var trans *SolTrans
 	for _, sol := range solTransPool {
-		if sol.TransID == input.TransID {
+		if sol.TxHash == input.TxHash {
 			trans = &sol
 			break
 		}
@@ -520,7 +552,7 @@ func submitSolTransHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("submitSolTrans params--------------")
 	fmt.Printf("[%v,%v,%v,%v,%v]\n", trans.Sig, from, to, trans.Amount, trans.IsDev)
 
-	transHash, err := solana.SubmitSolTransaction(trans.Sig, from, to, trans.Amount, trans.IsDev)
+	transHash, err := solana.SubmitSolTransaction(trans.Sig, trans.TxHash, trans.IsDev)
 	if err != nil {
 		fmt.Println(err)
 		http.Error(w, "Error submitting transaction", http.StatusInternalServerError)
