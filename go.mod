@@ -1,4 +1,4 @@
-module github.com/taurusgroup/frost-ed25519
+module github.com/uxuyprotocol/frost-ed25519
 
 go 1.14
 

@@ -3,12 +3,12 @@ package communication
 import (
 	"fmt"
 
-	"github.com/taurusgroup/frost-ed25519/pkg/eddsa"
-	"github.com/taurusgroup/frost-ed25519/pkg/frost"
-	"github.com/taurusgroup/frost-ed25519/pkg/frost/keygen"
-	"github.com/taurusgroup/frost-ed25519/pkg/frost/party"
-	"github.com/taurusgroup/frost-ed25519/pkg/frost/sign"
-	"github.com/taurusgroup/frost-ed25519/pkg/state"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/eddsa"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/frost"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/frost/keygen"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/frost/party"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/frost/sign"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/state"
 )
 
 // Handler holds the information for a certain Round by a participant.

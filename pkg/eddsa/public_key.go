@@ -4,7 +4,7 @@ import (
 	"crypto/ed25519"
 	"encoding/json"
 
-	"github.com/taurusgroup/frost-ed25519/pkg/ristretto"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/ristretto"
 )
 
 // PublicKey represents a FROST-Ed25519 verification key.

@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/taurusgroup/frost-ed25519/pkg/internal/scalar"
-	"github.com/taurusgroup/frost-ed25519/pkg/ristretto"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/internal/scalar"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/ristretto"
 )
 
 func TestFromBytes(t *testing.T) {

@@ -4,9 +4,9 @@ This file is not intended to be run by itself and serves mostly as an example of
 package main
 
 import (
-	"github.com/taurusgroup/frost-ed25519/pkg/messages"
-	"github.com/taurusgroup/frost-ed25519/pkg/state"
-	"github.com/taurusgroup/frost-ed25519/solana"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/messages"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/state"
+	"github.com/uxuyprotocol/frost-ed25519/solana"
 	"log"
 )
 

@@ -3,9 +3,9 @@ package helpers
 import (
 	"fmt"
 
-	"github.com/taurusgroup/frost-ed25519/pkg/frost/party"
-	"github.com/taurusgroup/frost-ed25519/pkg/messages"
-	"github.com/taurusgroup/frost-ed25519/pkg/state"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/frost/party"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/messages"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/state"
 )
 
 // NewPartySlice returns n party.ID s in the range [1, ..., n].

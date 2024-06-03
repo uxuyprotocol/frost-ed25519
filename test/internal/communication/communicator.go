@@ -3,7 +3,7 @@ package communication
 import (
 	"time"
 
-	"github.com/taurusgroup/frost-ed25519/pkg/messages"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/messages"
 )
 
 type Communicator interface {

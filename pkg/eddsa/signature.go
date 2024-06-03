@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/taurusgroup/frost-ed25519/pkg/ristretto"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/ristretto"
 )
 
 const MessageLengthSig = 32 + 32

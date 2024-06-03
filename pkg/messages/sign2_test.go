@@ -5,8 +5,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/taurusgroup/frost-ed25519/pkg/frost/party"
-	"github.com/taurusgroup/frost-ed25519/pkg/internal/scalar"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/frost/party"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/internal/scalar"
 )
 
 func TestSign2_MarshalBinary(t *testing.T) {

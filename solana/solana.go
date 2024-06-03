@@ -102,7 +102,7 @@ func GetSolAddress(publicKey []byte) string {
 }
 
 // InitSolTransaction 初始化一笔 Sol 交易
-func InitSolTransaction(from []byte, to []byte, amount uint64, isDev bool) (string, error) {
+func InitSolTransaction(from []byte, to []byte, amount uint64, isDev bool) (string, string, error) {
 
 	var rpcClient *rpc.Client
 	if isDev {
@@ -119,7 +119,7 @@ func InitSolTransaction(from []byte, to []byte, amount uint64, isDev bool) (stri
 
 	recent, err := rpcClient.GetRecentBlockhash(context.TODO(), rpc.CommitmentFinalized)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	tx, err := solana.NewTransaction(
@@ -133,8 +133,9 @@ func InitSolTransaction(from []byte, to []byte, amount uint64, isDev bool) (stri
 		recent.Value.Blockhash,
 		solana.TransactionPayer(fromAccount),
 	)
+
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	//return tx.ToBase64(), nil
@@ -142,7 +143,7 @@ func InitSolTransaction(from []byte, to []byte, amount uint64, isDev bool) (stri
 	msg64 := tx.Message.ToBase64()
 
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	msg641 := base64.StdEncoding.EncodeToString(messageBytes)
@@ -152,22 +153,27 @@ func InitSolTransaction(from []byte, to []byte, amount uint64, isDev bool) (stri
 
 	//return msg64, nil
 
-	//TODO: 此处需要考虑并发 用 uuid 标识
-	transactionPool = append(transactionPool, tx)
+	////TODO: 此处需要考虑并发 用 uuid 标识
+	//transactionPool = append(transactionPool, tx)
 	//return string(messageBytes), nil
-	return msg641, nil
+	txHash := tx.MustToBase64()
+
+	return msg641, txHash, nil
 }
 
 // SubmitSolTransaction 根据签名完成一笔交易
-func SubmitSolTransaction(sig string, from []byte, to []byte, amount uint64, isDev bool) (string, error) {
+func SubmitSolTransaction(sig string, txHash string, isDev bool) (string, error) {
 	// 将签名解码为字节片
 	sigBytes, err := base64.StdEncoding.DecodeString(sig)
 	if err != nil {
 		return "", err
 	}
+
 	signature := solana.SignatureFromBytes(sigBytes)
 
-	tx := transactionPool[0]
+	//tx := transactionPool[0]
+	tx := solana.Transaction{}
+	err = tx.UnmarshalBase64(txHash)
 
 	var rpcClient *rpc.Client
 	if isDev {
@@ -230,7 +236,7 @@ func SubmitSolTransaction(sig string, from []byte, to []byte, amount uint64, isD
 		context.Background(),
 		rpcClient,
 		wsClient,
-		tx,
+		&tx,
 	)
 	if err != nil {
 		return "", err
@@ -239,6 +245,10 @@ func SubmitSolTransaction(sig string, from []byte, to []byte, amount uint64, isD
 
 	fmt.Println("transaction finish: ", fsig.String(), tx.Message.RecentBlockhash.String())
 	return fsig.String(), nil
+}
+
+func main() {
+	
 }
 
 /*

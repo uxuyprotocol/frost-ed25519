@@ -3,10 +3,10 @@ package sign
 import (
 	"errors"
 
-	"github.com/taurusgroup/frost-ed25519/pkg/eddsa"
-	"github.com/taurusgroup/frost-ed25519/pkg/messages"
-	"github.com/taurusgroup/frost-ed25519/pkg/ristretto"
-	"github.com/taurusgroup/frost-ed25519/pkg/state"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/eddsa"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/messages"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/ristretto"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/state"
 )
 
 var (

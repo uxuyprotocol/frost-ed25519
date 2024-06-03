@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/taurusgroup/frost-ed25519/pkg/frost/party"
-	"github.com/taurusgroup/frost-ed25519/pkg/ristretto"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/frost/party"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/ristretto"
 )
 
 // SecretShare is a share of a secret key computed during the KeyGen protocol.

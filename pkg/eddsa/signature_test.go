@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/taurusgroup/frost-ed25519/pkg/messages"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/messages"
 )
 
 const sampleMessage = "This is a test for FROST"

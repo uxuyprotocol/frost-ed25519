@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/taurusgroup/frost-ed25519/pkg/frost/party"
-	"github.com/taurusgroup/frost-ed25519/pkg/messages"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/frost/party"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/messages"
 )
 
 type Channel struct {

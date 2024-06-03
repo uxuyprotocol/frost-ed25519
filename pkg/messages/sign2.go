@@ -3,8 +3,8 @@ package messages
 import (
 	"fmt"
 
-	"github.com/taurusgroup/frost-ed25519/pkg/frost/party"
-	"github.com/taurusgroup/frost-ed25519/pkg/ristretto"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/frost/party"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/ristretto"
 )
 
 const sizeSign2 = 32

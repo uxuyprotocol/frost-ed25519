@@ -271,7 +271,7 @@ MwA=
 -----END PGP PUBLIC KEY BLOCK-----
 ```
 
-Issues that are not critical (not exploitable, DoS, and so on) can be reported as [GitHub Issues](https://github.com/taurusgroup/frost-ed25519/issues).
+Issues that are not critical (not exploitable, DoS, and so on) can be reported as [GitHub Issues](https://github.com/uxuyprotocol/frost-ed25519/issues).
 
 
 ## Dependencies 

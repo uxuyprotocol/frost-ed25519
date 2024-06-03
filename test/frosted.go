@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/taurusgroup/frost-ed25519/pkg/eddsa"
-	"github.com/taurusgroup/frost-ed25519/pkg/frost/party"
-	"github.com/taurusgroup/frost-ed25519/test/internal/communication"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/eddsa"
+	"github.com/uxuyprotocol/frost-ed25519/pkg/frost/party"
+	"github.com/uxuyprotocol/frost-ed25519/test/internal/communication"
 )
 
 func Setup(N, T party.Size) (message []byte, keygenIDs, signIDs []party.ID) {
